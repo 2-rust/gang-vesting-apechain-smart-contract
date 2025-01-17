@@ -120,6 +120,8 @@ contract MultiRootVesting is Ownable {
         // Check if already claimed
         if (claimed[leaf]) revert AlreadyClaimed();
 
+        claimed[leaf] = true;
+
         // Get or initialize vesting
         Vesting storage vesting = vestings[leaf];
         if (vesting.amount == 0) {
