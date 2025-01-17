@@ -43,6 +43,8 @@ contract MultiRootVestingTest is Test {
         // Mint tokens to owner for vesting
         token.mint(owner, 1000000e18);
         token.approve(address(vest), type(uint256).max);
+        // Transfer some tokens to vesting contract
+        token.transfer(address(vest), 1400e18);
 
         vm.stopPrank();
     }
