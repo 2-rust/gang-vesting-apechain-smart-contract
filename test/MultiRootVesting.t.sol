@@ -19,7 +19,9 @@ contract MultiRootVestingTest is Test {
     address user4 = address(0x5);
 
     // Test data
-    bytes32[] public data;
+    bytes32[] public catLeaves;
+    bytes32[] public teamLeaves;
+    bytes32[] public seedLeaves;
     bytes32[] public roots;
     MultiRootVesting.Collection[] public collections;
 
@@ -54,7 +56,7 @@ contract MultiRootVestingTest is Test {
         ];
 
         // Create test data for Cat collection
-        bytes32[] memory catLeaves = new bytes32[](2);
+        catLeaves = new bytes32[](2);
         catLeaves[0] = keccak256(
             abi.encodePacked(
                 uint8(MultiRootVesting.Collection.Cat),
@@ -76,8 +78,8 @@ contract MultiRootVestingTest is Test {
             )
         );
 
-        // Create test data for Team collection - now with 2 leaves
-        bytes32[] memory teamLeaves = new bytes32[](2);
+        // Create test data for Team collection
+        teamLeaves = new bytes32[](2);
         teamLeaves[0] = keccak256(
             abi.encodePacked(
                 uint8(MultiRootVesting.Collection.Team),
@@ -99,8 +101,8 @@ contract MultiRootVestingTest is Test {
             )
         );
 
-        // Create test data for SeedRound collection - now with 2 leaves
-        bytes32[] memory seedLeaves = new bytes32[](2);
+        // Create test data for SeedRound collection
+        seedLeaves = new bytes32[](2);
         seedLeaves[0] = keccak256(
             abi.encodePacked(
                 uint8(MultiRootVesting.Collection.SeedRound),
@@ -123,18 +125,10 @@ contract MultiRootVestingTest is Test {
         );
 
         // Generate roots for each collection
-        roots.push(merkle.getRoot(catLeaves));
-        roots.push(merkle.getRoot(teamLeaves));
-        roots.push(merkle.getRoot(seedLeaves));
-
-        // Store all leaves for later use
-        data = catLeaves;
-        for (uint256 i = 0; i < teamLeaves.length; i++) {
-            data.push(teamLeaves[i]);
-        }
-        for (uint256 i = 0; i < seedLeaves.length; i++) {
-            data.push(seedLeaves[i]);
-        }
+        roots = new bytes32[](3);
+        roots[0] = merkle.getRoot(catLeaves);
+        roots[1] = merkle.getRoot(teamLeaves);
+        roots[2] = merkle.getRoot(seedLeaves);
     }
 
     function testInitialSetup() public view {
@@ -184,7 +178,7 @@ contract MultiRootVestingTest is Test {
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
 
-        bytes32[] memory proof = merkle.getProof(data, 0);
+        bytes32[] memory proof = merkle.getProof(catLeaves, 0);
 
         vm.prank(user1);
         vest.claim(
@@ -214,12 +208,47 @@ contract MultiRootVestingTest is Test {
         );
     }
 
+    function testClaimTeam() public {
+        uint256 amount = 300e18;
+        uint32 start = uint32(block.timestamp + 30 days);
+        uint32 end = uint32(block.timestamp + 395 days);
+
+        bytes32[] memory proof = merkle.getProof(teamLeaves, 0);
+
+        vm.prank(user3);
+        vest.claim(
+            proof,
+            MultiRootVesting.Collection.Team,
+            address(token),
+            user3,
+            amount,
+            start,
+            end
+        );
+
+        MultiRootVesting.Vesting memory vesting = vest.getVesting(
+            MultiRootVesting.Collection.Team,
+            address(token),
+            user3,
+            amount,
+            start,
+            end
+        );
+
+        assertEq(vesting.amount, amount);
+        assertEq(vesting.recipient, user3);
+        assertEq(
+            uint8(vesting.collection),
+            uint8(MultiRootVesting.Collection.Team)
+        );
+    }
+
     function testCannotClaimTwice() public {
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
 
-        bytes32[] memory proof = merkle.getProof(data, 0);
+        bytes32[] memory proof = merkle.getProof(catLeaves, 0);
 
         vm.startPrank(user1);
 
@@ -252,7 +281,7 @@ contract MultiRootVestingTest is Test {
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
 
-        bytes32[] memory proof = merkle.getProof(data, 0);
+        bytes32[] memory proof = merkle.getProof(catLeaves, 0);
 
         // Claim at start
         vm.prank(user1);
@@ -287,7 +316,7 @@ contract MultiRootVestingTest is Test {
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
 
-        bytes32[] memory proof = merkle.getProof(data, 0);
+        bytes32[] memory proof = merkle.getProof(catLeaves, 0);
 
         // Move to after vesting end
         vm.warp(end + 1 days);
@@ -313,7 +342,7 @@ contract MultiRootVestingTest is Test {
         uint32 end = uint32(block.timestamp + 365 days);
 
         // Use wrong proof (from index 1 instead of 0)
-        bytes32[] memory proof = merkle.getProof(data, 1);
+        bytes32[] memory proof = merkle.getProof(catLeaves, 1);
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSignature("InvalidMerkleProof()"));
