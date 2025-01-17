@@ -57,7 +57,7 @@ contract MultiRootVesting is Ownable {
     error InvalidCollection();
 
     event MerkleRootUpdated(Collection indexed collection, bytes32 newRoot);
-    event RootLocked(Collection indexed collection);
+    event CollectionRootLocked(Collection indexed collection);
     event VestingClaimed(bytes32 indexed vestingId, Collection indexed collection, address recipient, uint256 amount);
 
     constructor(Collection[] memory collections, bytes32[] memory roots) {
@@ -86,7 +86,7 @@ contract MultiRootVesting is Ownable {
     /// @param collection The collection to lock
     function lockRoot(Collection collection) external onlyOwner {
         collectionRoots[collection].locked = true;
-        emit RootLocked(collection);
+        emit CollectionRootLocked(collection);
     }
 
     /// @notice Claim vested tokens with merkle proof
