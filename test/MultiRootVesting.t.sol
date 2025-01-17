@@ -360,14 +360,19 @@ contract MultiRootVestingTest is Test {
     }
 
     function testInvalidCollection() public {
-        vm.expectRevert(abi.encodeWithSignature("InvalidCollection()"));
-        vest.vestedAmount(
-            MultiRootVesting.Collection(uint8(12)), // Invalid collection
+        // Create calldata for vestedAmount() with an invalid collection (value 12)
+        bytes memory callData = abi.encodeWithSignature(
+            "vestedAmount(uint8,address,address,uint256,uint32,uint32)",
+            12, // Invalid collection value
             address(token),
             user1,
             100e18,
             uint32(block.timestamp),
             uint32(block.timestamp + 365 days)
         );
+
+        vm.expectRevert(abi.encodeWithSignature("InvalidCollection()"));
+        (bool success, ) = address(vest).call(callData);
+        require(!success, "Invalid Collection");
     }
 }
