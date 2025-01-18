@@ -32,7 +32,7 @@ contract MultiRootVesting is Ownable {
     }
 
     struct Vesting {
-        uint256 amount;
+        uint256 totalClaim;
         uint256 claimed;
         uint256 tokenId;
         address recipient;
@@ -106,7 +106,7 @@ contract MultiRootVesting is Ownable {
     /// @param collection The collection type
     /// @param tokenId The tokenId being vested
     /// @param recipient The recipient of the vesting
-    /// @param amount_ The total amount being vested
+    /// @param totalClaim The total amount being vested
     /// @param start The start time of the vesting
     /// @param end The end time of the vesting
     function claim(
@@ -114,7 +114,7 @@ contract MultiRootVesting is Ownable {
         Collection collection,
         uint256 tokenId,
         address recipient,
-        uint256 amount_,
+        uint256 totalClaim,
         uint32 start,
         uint32 end
     ) external {
@@ -122,30 +122,31 @@ contract MultiRootVesting is Ownable {
         if (uint8(collection) >= 12) revert InvalidCollection();
 
         // Generate leaf from vesting data
-        bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, amount_, start, end));
+        bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, totalClaim, start, end));
 
         // Verify merkle proof against collection root
         if (!MerkleProofLib.verifyCalldata(proof, collectionRoots[collection].root, leaf)) {
             revert InvalidMerkleProof();
         }
 
-        // Calculate vested amount
-        (, uint256 amount) = calculateVesting(leaf);
-        if (amount == 0) revert AlreadyClaimed();
-
         // Get or initialize vesting
         Vesting storage vesting = vestings[leaf];
-        if (vesting.amount == 0) {
+        if (vesting.totalClaim == 0) {
             // Initialize vesting if first claim
+            vesting.totalClaim = totalClaim;
             vesting.tokenId = tokenId;
             vesting.recipient = recipient;
             vesting.start = start;
             vesting.end = end;
+            vesting.lastClaim = start;
             vesting.collection = collection;
         }
 
+        // Calculate vested amount
+        (, uint256 amount) = calculateVesting(leaf);
+        if (amount == 0) revert AlreadyClaimed();
+
         // Update vesting state
-        vesting.amount = amount;
         vesting.lastClaim = uint32(block.timestamp);
         unchecked {
             vesting.claimed += amount;
@@ -167,15 +168,15 @@ contract MultiRootVesting is Ownable {
         if (block.timestamp < vestingStart) return (vesting, 0);
 
         uint256 vestingEnd = vesting.end;
-        uint256 vestingAmount = vesting.amount;
+        uint256 vestingTotal = vesting.totalClaim;
         uint256 vestingClaimed = vesting.claimed;
         if (block.timestamp >= vestingEnd) {
-            return (vesting, (vestingAmount - vestingClaimed));
+            return (vesting, (vestingTotal - vestingClaimed));
         }
 
         uint256 timeSinceLastClaim = block.timestamp - vesting.lastClaim;
         uint256 vestingPeriod = vestingEnd - vestingStart;
-        amount = (vestingAmount * timeSinceLastClaim) / vestingPeriod;
+        amount = (vestingTotal * timeSinceLastClaim) / vestingPeriod;
     }
 
     /// @notice Get the vesting details
