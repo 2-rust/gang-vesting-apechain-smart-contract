@@ -119,11 +119,6 @@ contract MultiRootVesting is Ownable {
             revert InvalidMerkleProof();
         }
 
-        // Check if already claimed
-        if (claimed[leaf]) revert AlreadyClaimed();
-
-        claimed[leaf] = true;
-
         // Get or initialize vesting
         Vesting storage vesting = vestings[leaf];
         if (vesting.amount == 0) {
@@ -139,7 +134,7 @@ contract MultiRootVesting is Ownable {
 
         // Calculate vested amount
         (, uint256 amount) = _vestedAmount(leaf);
-        if (amount == 0) return;
+        if (amount == 0) revert AlreadyClaimed();
 
         // Update vesting state
         vesting.lastClaim = uint32(block.timestamp);

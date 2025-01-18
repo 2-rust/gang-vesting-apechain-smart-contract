@@ -173,6 +173,9 @@ contract MultiRootVestingTest is Test {
 
         bytes32[] memory proof = merkle.getProof(catLeaves, 0);
 
+        // Move to after vesting end
+        vm.warp(start + 1 days);
+
         vm.prank(user1);
         vest.claim(proof, MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
 
@@ -190,6 +193,9 @@ contract MultiRootVestingTest is Test {
         uint32 end = uint32(block.timestamp + 395 days);
 
         bytes32[] memory proof = merkle.getProof(teamLeaves, 0);
+
+        // Move to after vesting end
+        vm.warp(start + 1 days);
 
         vm.prank(user3);
         vest.claim(proof, MultiRootVesting.Collection.Team, address(token), user3, amount, start, end);
@@ -209,6 +215,9 @@ contract MultiRootVestingTest is Test {
 
         bytes32[] memory proof = merkle.getProof(catLeaves, 0);
 
+        // Move to after vesting end
+        vm.warp(start + 1 days);
+
         vm.startPrank(user1);
 
         vest.claim(proof, MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
@@ -225,6 +234,9 @@ contract MultiRootVestingTest is Test {
         uint32 end = uint32(block.timestamp + 365 days);
 
         bytes32[] memory proof = merkle.getProof(catLeaves, 0);
+
+        // Move to after vesting end
+        vm.warp(start + 1 days);
 
         // Claim at start
         vm.prank(user1);
