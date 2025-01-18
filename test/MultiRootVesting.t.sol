@@ -180,7 +180,7 @@ contract MultiRootVestingTest is Test {
         vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         MultiRootVesting.Vesting memory vesting =
-            vest.getVesting(MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
+            vest.getVesting(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         assertGt(vesting.claimed, 0);
         assertEq(vesting.totalClaim, amount);
@@ -202,7 +202,7 @@ contract MultiRootVestingTest is Test {
         vest.claim(proof, MultiRootVesting.Collection.Team, uint256(1), user3, amount, start, end);
 
         MultiRootVesting.Vesting memory vesting =
-            vest.getVesting(MultiRootVesting.Collection.Team, address(token), user3, amount, start, end);
+            vest.getVesting(MultiRootVesting.Collection.Team, uint256(1), user3, amount, start, end);
 
         assertGt(vesting.claimed, 0);
         assertEq(vesting.totalClaim, amount);
@@ -248,7 +248,7 @@ contract MultiRootVestingTest is Test {
         vm.warp(block.timestamp + 182.5 days);
 
         MultiRootVesting.Vesting memory vesting =
-            vest.getVesting(MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
+            vest.getVesting(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         // Should be roughly 50% of total amount
         assertApproxEqRel(vesting.totalClaim, amount / 2, 0.01e18); // 1% tolerance

@@ -189,7 +189,7 @@ contract MultiRootVesting is Ownable {
     /// @return The vesting struct
     function getVesting(
         Collection collection,
-        address tokenId,
+        uint256 tokenId,
         address recipient,
         uint256 amount,
         uint32 start,
