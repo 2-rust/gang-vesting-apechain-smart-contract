@@ -168,27 +168,6 @@ contract MultiRootVesting is Ownable {
         (, amount) = _vestedAmount(leaf);
     }
 
-    /// @notice Get the vesting details
-    /// @param collection The collection type
-    /// @param token The token being vested
-    /// @param recipient The recipient of the vesting
-    /// @param amount The total amount being vested
-    /// @param start The start time of the vesting
-    /// @param end The end time of the vesting
-    /// @return The vesting struct
-    function getVesting(
-        Collection collection,
-        address token,
-        address recipient,
-        uint256 amount,
-        uint32 start,
-        uint32 end
-    ) external view returns (Vesting memory) {
-        if (uint8(collection) >= 12) revert InvalidCollection();
-        bytes32 leaf = keccak256(abi.encodePacked(collection, token, recipient, amount, start, end));
-        return vestings[leaf];
-    }
-
     /// @notice Internal function to get the vested amount
     /// @param vestingId The vesting identifier
     /// @return vesting The vesting struct
@@ -209,6 +188,27 @@ contract MultiRootVesting is Ownable {
         uint256 timeSinceLastClaim = block.timestamp - vesting.lastClaim;
         uint256 vestingPeriod = vestingEnd - vestingStart;
         amount = (vestingAmount * timeSinceLastClaim) / vestingPeriod;
+    }
+
+    /// @notice Get the vesting details
+    /// @param collection The collection type
+    /// @param token The token being vested
+    /// @param recipient The recipient of the vesting
+    /// @param amount The total amount being vested
+    /// @param start The start time of the vesting
+    /// @param end The end time of the vesting
+    /// @return The vesting struct
+    function getVesting(
+        Collection collection,
+        address token,
+        address recipient,
+        uint256 amount,
+        uint32 start,
+        uint32 end
+    ) external view returns (Vesting memory) {
+        if (uint8(collection) >= 12) revert InvalidCollection();
+        bytes32 leaf = keccak256(abi.encodePacked(collection, token, recipient, amount, start, end));
+        return vestings[leaf];
     }
 
     /// @notice Get the merkle root for a specific collection
