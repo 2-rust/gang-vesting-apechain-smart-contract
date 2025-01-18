@@ -59,7 +59,7 @@ contract MultiRootVestingTest is Test {
         catLeaves[0] = keccak256(
             abi.encodePacked(
                 uint8(MultiRootVesting.Collection.Cat),
-                address(token),
+                uint256(1),
                 user1,
                 uint256(100e18),
                 uint32(block.timestamp),
@@ -69,7 +69,7 @@ contract MultiRootVestingTest is Test {
         catLeaves[1] = keccak256(
             abi.encodePacked(
                 uint8(MultiRootVesting.Collection.Cat),
-                address(token),
+                uint256(2),
                 user2,
                 uint256(200e18),
                 uint32(block.timestamp),
@@ -82,7 +82,7 @@ contract MultiRootVestingTest is Test {
         teamLeaves[0] = keccak256(
             abi.encodePacked(
                 uint8(MultiRootVesting.Collection.Team),
-                address(token),
+                uint256(1),
                 user3,
                 uint256(300e18),
                 uint32(block.timestamp + 30 days),
@@ -92,7 +92,7 @@ contract MultiRootVestingTest is Test {
         teamLeaves[1] = keccak256(
             abi.encodePacked(
                 uint8(MultiRootVesting.Collection.Team),
-                address(token),
+                uint256(2),
                 user4,
                 uint256(150e18),
                 uint32(block.timestamp + 30 days),
@@ -105,7 +105,7 @@ contract MultiRootVestingTest is Test {
         seedLeaves[0] = keccak256(
             abi.encodePacked(
                 uint8(MultiRootVesting.Collection.SeedRound),
-                address(token),
+                uint256(1),
                 user1,
                 uint256(400e18),
                 uint32(block.timestamp),
@@ -115,7 +115,7 @@ contract MultiRootVestingTest is Test {
         seedLeaves[1] = keccak256(
             abi.encodePacked(
                 uint8(MultiRootVesting.Collection.SeedRound),
-                address(token),
+                uint256(2),
                 user2,
                 uint256(200e18),
                 uint32(block.timestamp),
@@ -177,7 +177,7 @@ contract MultiRootVestingTest is Test {
         vm.warp(start + 1 days);
 
         vm.prank(user1);
-        vest.claim(proof, MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
+        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         MultiRootVesting.Vesting memory vesting =
             vest.getVesting(MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
@@ -198,7 +198,7 @@ contract MultiRootVestingTest is Test {
         vm.warp(start + 1 days);
 
         vm.prank(user3);
-        vest.claim(proof, MultiRootVesting.Collection.Team, address(token), user3, amount, start, end);
+        vest.claim(proof, MultiRootVesting.Collection.Team, uint256(1), user3, amount, start, end);
 
         MultiRootVesting.Vesting memory vesting =
             vest.getVesting(MultiRootVesting.Collection.Team, address(token), user3, amount, start, end);
@@ -220,10 +220,10 @@ contract MultiRootVestingTest is Test {
 
         vm.startPrank(user1);
 
-        vest.claim(proof, MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
+        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
-        vest.claim(proof, MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
+        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         vm.stopPrank();
     }
@@ -240,13 +240,12 @@ contract MultiRootVestingTest is Test {
 
         // Claim at start
         vm.prank(user1);
-        vest.claim(proof, MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
+        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         // Move forward 182.5 days (50% of vesting period)
         vm.warp(block.timestamp + 182.5 days);
 
-        uint256 vestedAmount =
-            vest.vestedAmount(MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
+        uint256 vestedAmount = vest.vestedAmount(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         // Should be roughly 50% of total amount
         assertApproxEqRel(vestedAmount, amount / 2, 0.01e18); // 1% tolerance
@@ -263,7 +262,7 @@ contract MultiRootVestingTest is Test {
         vm.warp(end + 1 days);
 
         vm.prank(user1);
-        vest.claim(proof, MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
+        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         // Should have received full amount
         assertEq(token.balanceOf(user1), amount);
@@ -279,7 +278,7 @@ contract MultiRootVestingTest is Test {
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSignature("InvalidMerkleProof()"));
-        vest.claim(proof, MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
+        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
     }
 
     function testInvalidCollection() public {

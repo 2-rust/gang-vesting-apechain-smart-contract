@@ -34,7 +34,7 @@ contract MultiRootVesting is Ownable {
     struct Vesting {
         uint256 amount;
         uint256 claimed;
-        address token;
+        uint256 tokenId;
         address recipient;
         uint32 start;
         uint32 end;
@@ -94,7 +94,7 @@ contract MultiRootVesting is Ownable {
     /// @notice Claim vested tokens with merkle proof
     /// @param proof Merkle proof to validate the claim
     /// @param collection The collection type
-    /// @param token The token being vested
+    /// @param tokenId The tokenId being vested
     /// @param recipient The recipient of the vesting
     /// @param amount_ The total amount being vested
     /// @param start The start time of the vesting
@@ -102,7 +102,7 @@ contract MultiRootVesting is Ownable {
     function claim(
         bytes32[] calldata proof,
         Collection collection,
-        address token,
+        uint256 tokenId,
         address recipient,
         uint256 amount_,
         uint32 start,
@@ -112,31 +112,30 @@ contract MultiRootVesting is Ownable {
         if (uint8(collection) >= 12) revert InvalidCollection();
 
         // Generate leaf from vesting data
-        bytes32 leaf = keccak256(abi.encodePacked(collection, token, recipient, amount_, start, end));
+        bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, amount_, start, end));
 
         // Verify merkle proof against collection root
         if (!MerkleProofLib.verifyCalldata(proof, collectionRoots[collection].root, leaf)) {
             revert InvalidMerkleProof();
         }
 
-        // Get or initialize vesting
-        Vesting storage vesting = vestings[leaf];
-        if (vesting.amount == 0) {
-            // Initialize vesting if first claim
-            vesting.token = token;
-            vesting.recipient = recipient;
-            vesting.amount = amount_;
-            vesting.start = start;
-            vesting.end = end;
-            vesting.lastClaim = start;
-            vesting.collection = collection;
-        }
-
         // Calculate vested amount
         (, uint256 amount) = _vestedAmount(leaf);
         if (amount == 0) revert AlreadyClaimed();
 
+        // Get or initialize vesting
+        Vesting storage vesting = vestings[leaf];
+        if (vesting.amount == 0) {
+            // Initialize vesting if first claim
+            vesting.tokenId = tokenId;
+            vesting.recipient = recipient;
+            vesting.start = start;
+            vesting.end = end;
+            vesting.collection = collection;
+        }
+
         // Update vesting state
+        vesting.amount = amount;
         vesting.lastClaim = uint32(block.timestamp);
         unchecked {
             vesting.claimed += amount;
@@ -149,7 +148,7 @@ contract MultiRootVesting is Ownable {
 
     /// @notice Get the amount vested
     /// @param collection The collection type
-    /// @param token The token being vested
+    /// @param tokenId The tokenId being vested
     /// @param recipient The recipient of the vesting
     /// @param amount The total amount being vested
     /// @param start The start time of the vesting
@@ -157,14 +156,14 @@ contract MultiRootVesting is Ownable {
     /// @return amount The amount vested
     function vestedAmount(
         Collection collection,
-        address token,
+        uint256 tokenId,
         address recipient,
         uint256 amount_,
         uint32 start,
         uint32 end
     ) external view returns (uint256 amount) {
         if (uint8(collection) >= 12) revert InvalidCollection();
-        bytes32 leaf = keccak256(abi.encodePacked(collection, token, recipient, amount_, start, end));
+        bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, amount_, start, end));
         (, amount) = _vestedAmount(leaf);
     }
 
@@ -192,7 +191,7 @@ contract MultiRootVesting is Ownable {
 
     /// @notice Get the vesting details
     /// @param collection The collection type
-    /// @param token The token being vested
+    /// @param tokenId The tokenId being vested
     /// @param recipient The recipient of the vesting
     /// @param amount The total amount being vested
     /// @param start The start time of the vesting
@@ -200,14 +199,14 @@ contract MultiRootVesting is Ownable {
     /// @return The vesting struct
     function getVesting(
         Collection collection,
-        address token,
+        address tokenId,
         address recipient,
         uint256 amount,
         uint32 start,
         uint32 end
     ) external view returns (Vesting memory) {
         if (uint8(collection) >= 12) revert InvalidCollection();
-        bytes32 leaf = keccak256(abi.encodePacked(collection, token, recipient, amount, start, end));
+        bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, amount, start, end));
         return vestings[leaf];
     }
 
