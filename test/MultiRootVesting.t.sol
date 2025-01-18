@@ -32,7 +32,7 @@ contract MultiRootVestingTest is Test {
     MultiRootVesting.Collection[] public collections;
     address[] public nftAddresses;
 
-    function setUp() public {
+    function setUp() public virtual {
         vm.startPrank(owner);
 
         // Deploy mock tokens

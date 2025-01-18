@@ -5,6 +5,11 @@ import "@solady/src/auth/Ownable.sol";
 import "@solady/src/utils/SafeTransferLib.sol";
 import "@solady/src/utils/MerkleProofLib.sol";
 
+// TODO: MODIFY ONCE WE ADD SHADOWS
+interface IERC721 {
+    function ownerOf(uint256 tokenId) external view returns (address);
+}
+
 /// @title MultiRootVesting
 /// @notice Token vesting with multiple merkle roots for different collections
 /// @author Rookmate (@0xRookmate)
@@ -155,10 +160,14 @@ contract MultiRootVesting is Ownable {
             vesting.claimed += amount;
         }
 
-        // TODO: Add logic for NFT owner validation for first 5 collections before transferring
-        // 1. Check owner of tokenId
-        // 2. update recipient if owner is not recipient
-        // 3. Send amount to owner
+        // For NFT collections, use true NFT owner as recipient
+        if (uint8(collection) < 5) {
+            // TODO: MODIFY ONCE WE ADD SHADOWS
+            address owner = IERC721(nftCollections[collection]).ownerOf(tokenId);
+            if (owner != vesting.recipient) {
+                vesting.recipient = owner;
+            }
+        }
 
         SafeTransferLib.safeTransfer(vestingToken, vesting.recipient, amount);
 
