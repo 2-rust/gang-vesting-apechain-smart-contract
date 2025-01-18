@@ -179,7 +179,7 @@ contract MultiRootVestingTest is Test {
         vm.prank(user1);
         vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
-        MultiRootVesting.Vesting memory vesting =
+        (MultiRootVesting.Vesting memory vesting,) =
             vest.getVesting(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         assertGt(vesting.claimed, 0);
@@ -201,7 +201,7 @@ contract MultiRootVestingTest is Test {
         vm.prank(user3);
         vest.claim(proof, MultiRootVesting.Collection.Team, uint256(1), user3, amount, start, end);
 
-        MultiRootVesting.Vesting memory vesting =
+        (MultiRootVesting.Vesting memory vesting,) =
             vest.getVesting(MultiRootVesting.Collection.Team, uint256(1), user3, amount, start, end);
 
         assertGt(vesting.claimed, 0);
@@ -244,14 +244,13 @@ contract MultiRootVestingTest is Test {
         vm.prank(user1);
         vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
-        // Move forward 182.5 days (50% of vesting period)
-        vm.warp(block.timestamp + 182.5 days);
+        // Move forward 181.5 days (50% of vesting period after first claim)
+        vm.warp(block.timestamp + 181.5 days);
 
-        MultiRootVesting.Vesting memory vesting =
-            vest.getVesting(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        (, uint256 vestable) = vest.getVesting(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         // Should be roughly 50% of total amount
-        assertApproxEqRel(vesting.totalClaim, amount / 2, 0.01e18); // 1% tolerance
+        assertApproxEqRel(vestable, amount / 2, 0.01e18); // 1% tolerance
     }
 
     function testClaimAfterEnd() public {

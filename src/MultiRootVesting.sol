@@ -158,11 +158,11 @@ contract MultiRootVesting is Ownable {
     }
 
     /// @notice Internal function to get the vested amount
-    /// @param vestingId The vesting identifier
+    /// @param leaf The vesting identifier
     /// @return vesting The vesting struct
     /// @return amount The amount vested
-    function calculateVesting(bytes32 vestingId) internal view returns (Vesting storage vesting, uint256 amount) {
-        vesting = vestings[vestingId];
+    function calculateVesting(bytes32 leaf) internal view returns (Vesting storage vesting, uint256 amount) {
+        vesting = vestings[leaf];
 
         uint256 vestingStart = vesting.start;
         if (block.timestamp < vestingStart) return (vesting, 0);
@@ -183,7 +183,7 @@ contract MultiRootVesting is Ownable {
     /// @param collection The collection type
     /// @param tokenId The tokenId being vested
     /// @param recipient The recipient of the vesting
-    /// @param amount The total amount being vested
+    /// @param totalClaim The total totalClaim being vested
     /// @param start The start time of the vesting
     /// @param end The end time of the vesting
     /// @return The vesting struct
@@ -191,12 +191,12 @@ contract MultiRootVesting is Ownable {
         Collection collection,
         uint256 tokenId,
         address recipient,
-        uint256 amount,
+        uint256 totalClaim,
         uint32 start,
         uint32 end
-    ) external view returns (Vesting memory) {
+    ) external view returns (Vesting memory, uint256 amount) {
         if (uint8(collection) >= 12) revert InvalidCollection();
-        bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, amount, start, end));
-        return vestings[leaf];
+        bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, totalClaim, start, end));
+        return calculateVesting(leaf);
     }
 }
