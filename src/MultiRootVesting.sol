@@ -12,11 +12,11 @@ contract MultiRootVesting is Ownable {
     address immutable vestingToken;
 
     enum Collection {
-        Cat,
-        Rat,
-        Dog,
-        Pigeon,
-        Crab,
+        Cat, // NFT Collection
+        Rat, // NFT Collection
+        Dog, // NFT Collection
+        Pigeon, // NFT Collection
+        Crab, // NFT Collection
         Team,
         SeedRound,
         StrategicRound,
@@ -151,6 +151,11 @@ contract MultiRootVesting is Ownable {
         unchecked {
             vesting.claimed += amount;
         }
+
+        // TODO: Add logic for NFT owner validation for first 5 collections before transferring
+        // 1. Check owner of tokenId
+        // 2. Send amount to owner
+        // If doing like this remove recipient param from function and struct
 
         SafeTransferLib.safeTransfer(vestingToken, vesting.recipient, amount);
 
