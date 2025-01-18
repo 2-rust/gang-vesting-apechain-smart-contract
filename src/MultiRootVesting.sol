@@ -115,7 +115,7 @@ contract MultiRootVesting is Ownable {
         bytes32 leaf = keccak256(abi.encodePacked(collection, token, recipient, amount_, start, end));
 
         // Verify merkle proof against collection root
-        if (!MerkleProofLib.verify(proof, collectionRoots[collection].root, leaf)) {
+        if (!MerkleProofLib.verifyCalldata(proof, collectionRoots[collection].root, leaf)) {
             revert InvalidMerkleProof();
         }
 
