@@ -38,7 +38,7 @@ contract MultiRootVestingTest is Test {
         setupTestData();
 
         // Deploy vesting contract
-        vest = new MultiRootVesting(collections, roots);
+        vest = new MultiRootVesting(collections, roots, address(token));
 
         // Mint tokens to owner for vesting
         token.mint(owner, 1000000e18);

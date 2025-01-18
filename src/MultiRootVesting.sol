@@ -2,13 +2,15 @@
 pragma solidity 0.8.20;
 
 import "@solady/src/auth/Ownable.sol";
-import "@solady/src/tokens/ERC20.sol";
+import "@solady/src/utils/SafeTransferLib.sol";
 import "@solady/src/utils/MerkleProofLib.sol";
 
 /// @title MultiRootVesting
 /// @notice Token vesting with multiple merkle roots for different collections
 /// @author Rookmate (@0xRookmate)
 contract MultiRootVesting is Ownable {
+    address immutable vestingToken;
+
     enum Collection {
         Cat,
         Rat,
@@ -44,8 +46,6 @@ contract MultiRootVesting is Ownable {
     mapping(Collection => MerkleRootData) public collectionRoots;
     // Mapping from vesting hash to vesting data
     mapping(bytes32 => Vesting) public vestings;
-    // Mapping from vesting hash to claimed status
-    mapping(bytes32 => bool) public claimed;
 
     error InvalidAddress();
     error InvalidAmount();
@@ -60,8 +60,10 @@ contract MultiRootVesting is Ownable {
     event CollectionRootLocked(Collection indexed collection);
     event VestingClaimed(bytes32 indexed vestingId, Collection indexed collection, address recipient, uint256 amount);
 
-    constructor(Collection[] memory collections, bytes32[] memory roots) {
+    constructor(Collection[] memory collections, bytes32[] memory roots, address _vestingToken) {
         _initializeOwner(msg.sender);
+
+        vestingToken = _vestingToken;
 
         if (collections.length != roots.length) revert InvalidAmount();
 
@@ -145,8 +147,7 @@ contract MultiRootVesting is Ownable {
             vesting.claimed += amount;
         }
 
-        // Transfer tokens
-        ERC20(vesting.token).transfer(vesting.recipient, amount);
+        SafeTransferLib.safeTransfer(vestingToken, vesting.recipient, amount);
 
         emit VestingClaimed(leaf, collection, recipient, amount);
     }
