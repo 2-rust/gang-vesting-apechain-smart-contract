@@ -1,15 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
-import "../src/MultiRootVesting.sol";
-import "@solady/src/tokens/ERC20.sol";
-import "./mocks/MockERC20.sol";
 import "@murky/Merkle.sol";
+import "@solady/src/tokens/ERC20.sol";
+
+import "../src/MultiRootVesting.sol";
+import "./mocks/MockERC20.sol";
+import "./mocks/MockERC721.sol";
 
 contract MultiRootVestingTest is Test {
-    MultiRootVesting vest;
+    MultiRootVesting vestContract;
     MockERC20 token;
+    MockERC721 catNFT;
+    MockERC721 ratNFT;
+    MockERC721 dogNFT;
+    MockERC721 pigeonNFT;
+    MockERC721 crabNFT;
     Merkle merkle;
 
     address owner = address(0x1);
@@ -18,33 +25,40 @@ contract MultiRootVestingTest is Test {
     address user3 = address(0x4);
     address user4 = address(0x5);
 
-    // Test data
     bytes32[] public catLeaves;
     bytes32[] public teamLeaves;
     bytes32[] public seedLeaves;
     bytes32[] public roots;
     MultiRootVesting.Collection[] public collections;
+    address[] public nftAddresses;
 
     function setUp() public {
         vm.startPrank(owner);
 
-        // Deploy mock token
+        // Deploy mock tokens
         token = new MockERC20("Test Token", "TEST", 18);
+        catNFT = new MockERC721("Cat NFT", "CAT");
+        ratNFT = new MockERC721("Rat NFT", "RAT");
+        dogNFT = new MockERC721("Dog NFT", "DOG");
+        pigeonNFT = new MockERC721("Pigeon NFT", "PGN");
+        crabNFT = new MockERC721("Crab NFT", "CRB");
 
-        // Initialize Murky
         merkle = new Merkle();
-
-        // Setup test data for each collection
         setupTestData();
 
-        // Deploy vesting contract
-        vest = new MultiRootVesting(collections, roots, address(token));
+        // Set up NFT addresses array
+        nftAddresses = [address(catNFT), address(ratNFT), address(dogNFT), address(pigeonNFT), address(crabNFT)];
+
+        vestContract = new MultiRootVesting(collections, roots, nftAddresses, address(token));
 
         // Mint tokens to owner for vesting
         token.mint(owner, 1000000e18);
-        token.approve(address(vest), type(uint256).max);
-        // Transfer some tokens to vesting contract
-        token.transfer(address(vest), 1400e18);
+        token.approve(address(vestContract), type(uint256).max);
+        token.transfer(address(vestContract), 1400e18);
+
+        // Mint NFTs to users
+        catNFT.mint(user1);
+        catNFT.mint(user2);
 
         vm.stopPrank();
     }
@@ -130,9 +144,19 @@ contract MultiRootVestingTest is Test {
         roots[2] = merkle.getRoot(seedLeaves);
     }
 
+    function testConstructorValidation() public {
+        address[] memory invalidNFTs = new address[](4); // Wrong length
+        vm.expectRevert(abi.encodeWithSignature("InvalidAmount()"));
+        new MultiRootVesting(collections, roots, invalidNFTs, address(token));
+
+        address[] memory invalidAddresses = new address[](5);
+        vm.expectRevert(abi.encodeWithSignature("InvalidAddress()"));
+        new MultiRootVesting(collections, roots, invalidAddresses, address(token));
+    }
+
     function testInitialSetup() public view {
         for (uint256 i = 0; i < collections.length; i++) {
-            (bytes32 root, bool locked) = vest.getCollectionRoot(collections[i]);
+            (bytes32 root, bool locked) = vestContract.collectionRoots(collections[i]);
             assert(root == roots[i]);
             assert(!locked);
         }
@@ -140,18 +164,18 @@ contract MultiRootVestingTest is Test {
 
     function testLockRoot() public {
         vm.prank(owner);
-        vest.lockRoot(MultiRootVesting.Collection.Cat);
+        vestContract.lockRoot(MultiRootVesting.Collection.Cat);
 
-        (, bool locked) = vest.getCollectionRoot(MultiRootVesting.Collection.Cat);
+        (, bool locked) = vestContract.collectionRoots(MultiRootVesting.Collection.Cat);
         assertTrue(locked);
     }
 
     function testCannotUpdateLockedRoot() public {
         vm.startPrank(owner);
-        vest.lockRoot(MultiRootVesting.Collection.Cat);
+        vestContract.lockRoot(MultiRootVesting.Collection.Cat);
 
         vm.expectRevert(abi.encodeWithSignature("RootLocked()"));
-        vest.updateMerkleRoot(MultiRootVesting.Collection.Cat, bytes32(0));
+        vestContract.updateMerkleRoot(MultiRootVesting.Collection.Cat, bytes32(0));
 
         vm.stopPrank();
     }
@@ -160,9 +184,9 @@ contract MultiRootVestingTest is Test {
         bytes32 newRoot = bytes32(uint256(1));
 
         vm.prank(owner);
-        vest.updateMerkleRoot(MultiRootVesting.Collection.Cat, newRoot);
+        vestContract.updateMerkleRoot(MultiRootVesting.Collection.Cat, newRoot);
 
-        (bytes32 root,) = vest.getCollectionRoot(MultiRootVesting.Collection.Cat);
+        (bytes32 root,) = vestContract.collectionRoots(MultiRootVesting.Collection.Cat);
         assertEq(root, newRoot);
     }
 
@@ -177,10 +201,10 @@ contract MultiRootVestingTest is Test {
         vm.warp(start + 1 days);
 
         vm.prank(user1);
-        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         (MultiRootVesting.Vesting memory vesting,) =
-            vest.getVesting(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+            vestContract.getVesting(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         assertGt(vesting.claimed, 0);
         assertEq(vesting.totalClaim, amount);
@@ -199,10 +223,10 @@ contract MultiRootVestingTest is Test {
         vm.warp(start + 1 days);
 
         vm.prank(user3);
-        vest.claim(proof, MultiRootVesting.Collection.Team, uint256(1), user3, amount, start, end);
+        vestContract.claim(proof, MultiRootVesting.Collection.Team, uint256(1), user3, amount, start, end);
 
         (MultiRootVesting.Vesting memory vesting,) =
-            vest.getVesting(MultiRootVesting.Collection.Team, uint256(1), user3, amount, start, end);
+            vestContract.getVesting(MultiRootVesting.Collection.Team, uint256(1), user3, amount, start, end);
 
         assertGt(vesting.claimed, 0);
         assertEq(vesting.totalClaim, amount);
@@ -222,10 +246,10 @@ contract MultiRootVestingTest is Test {
 
         vm.startPrank(user1);
 
-        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
-        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         vm.stopPrank();
     }
@@ -242,12 +266,13 @@ contract MultiRootVestingTest is Test {
 
         // Claim at start
         vm.prank(user1);
-        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         // Move forward 181.5 days (50% of vesting period after first claim)
         vm.warp(block.timestamp + 181.5 days);
 
-        (, uint256 vestable) = vest.getVesting(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        (, uint256 vestable) =
+            vestContract.getVesting(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         // Should be roughly 50% of total amount
         assertApproxEqRel(vestable, amount / 2, 0.01e18); // 1% tolerance
@@ -264,7 +289,7 @@ contract MultiRootVestingTest is Test {
         vm.warp(end + 1 days);
 
         vm.prank(user1);
-        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
 
         // Should have received full amount
         assertEq(token.balanceOf(user1), amount);
@@ -280,7 +305,7 @@ contract MultiRootVestingTest is Test {
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSignature("InvalidMerkleProof()"));
-        vest.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
     }
 
     function testInvalidCollection() public {
@@ -296,7 +321,7 @@ contract MultiRootVestingTest is Test {
         );
 
         vm.expectRevert(abi.encodeWithSignature("InvalidCollection()"));
-        (bool success,) = address(vest).call(callData);
+        (bool success,) = address(vestContract).call(callData);
         require(!success, "Invalid Collection");
     }
 }

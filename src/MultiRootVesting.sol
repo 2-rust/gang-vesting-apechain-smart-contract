@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 
 import "@solady/src/auth/Ownable.sol";
 import "@solady/src/utils/SafeTransferLib.sol";
@@ -44,6 +44,8 @@ contract MultiRootVesting is Ownable {
 
     // Mapping from Collection to its merkle root data
     mapping(Collection => MerkleRootData) public collectionRoots;
+    // Mapping from Collection to its NFT address
+    mapping(Collection => address) public nftCollections;
     // Mapping from vesting hash to vesting data
     mapping(bytes32 => Vesting) public vestings;
 
@@ -55,23 +57,34 @@ contract MultiRootVesting is Ownable {
     error RootLocked();
     error AlreadyClaimed();
     error InvalidCollection();
+    error CollectionNotConfigured();
 
     event MerkleRootUpdated(Collection indexed collection, bytes32 newRoot);
     event CollectionRootLocked(Collection indexed collection);
     event VestingClaimed(bytes32 indexed vestingId, Collection indexed collection, address recipient, uint256 amount);
 
-    constructor(Collection[] memory collections, bytes32[] memory roots, address _vestingToken) {
+    constructor(
+        Collection[] memory collections,
+        bytes32[] memory roots,
+        address[] memory nftAddresses,
+        address _vestingToken
+    ) {
         _initializeOwner(msg.sender);
+
+        if (collections.length != roots.length) revert InvalidAmount();
+        if (nftAddresses.length != 5) revert InvalidAmount();
 
         vestingToken = _vestingToken;
 
-        if (collections.length != roots.length) revert InvalidAmount();
+        // Set up NFT collection addresses
+        for (uint256 i = 0; i < 5; ++i) {
+            if (nftAddresses[i] == address(0)) revert InvalidAddress();
+            nftCollections[Collection(i)] = nftAddresses[i];
+        }
 
-        for (uint256 i = 0; i < collections.length;) {
+        // Set up merkle roots
+        for (uint256 i = 0; i < collections.length; ++i) {
             collectionRoots[collections[i]].root = roots[i];
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -89,16 +102,6 @@ contract MultiRootVesting is Ownable {
     function lockRoot(Collection collection) external onlyOwner {
         collectionRoots[collection].locked = true;
         emit CollectionRootLocked(collection);
-    }
-
-    /// @notice Get the merkle root for a specific collection
-    /// @param collection The collection to query
-    /// @return root The merkle root
-    /// @return locked Whether the root is locked
-    function getCollectionRoot(Collection collection) external view returns (bytes32 root, bool locked) {
-        if (uint8(collection) >= 12) revert InvalidCollection();
-        MerkleRootData memory rootData = collectionRoots[collection];
-        return (rootData.root, rootData.locked);
     }
 
     /// @notice Claim vested tokens with merkle proof
@@ -154,8 +157,8 @@ contract MultiRootVesting is Ownable {
 
         // TODO: Add logic for NFT owner validation for first 5 collections before transferring
         // 1. Check owner of tokenId
-        // 2. Send amount to owner
-        // If doing like this remove recipient param from function and struct
+        // 2. update recipient if owner is not recipient
+        // 3. Send amount to owner
 
         SafeTransferLib.safeTransfer(vestingToken, vesting.recipient, amount);
 
