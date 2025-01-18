@@ -245,10 +245,11 @@ contract MultiRootVestingTest is Test {
         // Move forward 182.5 days (50% of vesting period)
         vm.warp(block.timestamp + 182.5 days);
 
-        uint256 vestedAmount = vest.vestedAmount(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        MultiRootVesting.Vesting memory vesting =
+            vest.getVesting(MultiRootVesting.Collection.Cat, address(token), user1, amount, start, end);
 
         // Should be roughly 50% of total amount
-        assertApproxEqRel(vestedAmount, amount / 2, 0.01e18); // 1% tolerance
+        assertApproxEqRel(vesting.amount, amount / 2, 0.01e18); // 1% tolerance
     }
 
     function testClaimAfterEnd() public {

@@ -91,6 +91,16 @@ contract MultiRootVesting is Ownable {
         emit CollectionRootLocked(collection);
     }
 
+    /// @notice Get the merkle root for a specific collection
+    /// @param collection The collection to query
+    /// @return root The merkle root
+    /// @return locked Whether the root is locked
+    function getCollectionRoot(Collection collection) external view returns (bytes32 root, bool locked) {
+        if (uint8(collection) >= 12) revert InvalidCollection();
+        MerkleRootData memory rootData = collectionRoots[collection];
+        return (rootData.root, rootData.locked);
+    }
+
     /// @notice Claim vested tokens with merkle proof
     /// @param proof Merkle proof to validate the claim
     /// @param collection The collection type
@@ -146,27 +156,6 @@ contract MultiRootVesting is Ownable {
         emit VestingClaimed(leaf, collection, recipient, amount);
     }
 
-    /// @notice Get the amount vested
-    /// @param collection The collection type
-    /// @param tokenId The tokenId being vested
-    /// @param recipient The recipient of the vesting
-    /// @param amount The total amount being vested
-    /// @param start The start time of the vesting
-    /// @param end The end time of the vesting
-    /// @return amount The amount vested
-    function vestedAmount(
-        Collection collection,
-        uint256 tokenId,
-        address recipient,
-        uint256 amount_,
-        uint32 start,
-        uint32 end
-    ) external view returns (uint256 amount) {
-        if (uint8(collection) >= 12) revert InvalidCollection();
-        bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, amount_, start, end));
-        (, amount) = calculateVesting(leaf);
-    }
-
     /// @notice Internal function to get the vested amount
     /// @param vestingId The vesting identifier
     /// @return vesting The vesting struct
@@ -208,15 +197,5 @@ contract MultiRootVesting is Ownable {
         if (uint8(collection) >= 12) revert InvalidCollection();
         bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, amount, start, end));
         return vestings[leaf];
-    }
-
-    /// @notice Get the merkle root for a specific collection
-    /// @param collection The collection to query
-    /// @return root The merkle root
-    /// @return locked Whether the root is locked
-    function getCollectionRoot(Collection collection) external view returns (bytes32 root, bool locked) {
-        if (uint8(collection) >= 12) revert InvalidCollection();
-        MerkleRootData memory rootData = collectionRoots[collection];
-        return (rootData.root, rootData.locked);
     }
 }
