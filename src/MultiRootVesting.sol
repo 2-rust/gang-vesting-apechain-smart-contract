@@ -169,19 +169,31 @@ contract MultiRootVesting is Ownable {
     function calculateVesting(bytes32 leaf) internal view returns (Vesting storage vesting, uint256 amount) {
         vesting = vestings[leaf];
 
-        uint256 vestingStart = vesting.start;
-        if (block.timestamp < vestingStart) return (vesting, 0);
+        uint256 start = vesting.start;
+        uint256 current = block.timestamp;
 
-        uint256 vestingEnd = vesting.end;
-        uint256 vestingTotal = vesting.totalClaim;
-        uint256 vestingClaimed = vesting.claimed;
-        if (block.timestamp >= vestingEnd) {
-            return (vesting, (vestingTotal - vestingClaimed));
+        // Early return if vesting hasn't started
+        if (current < start) return (vesting, 0);
+
+        uint256 end = vesting.end;
+        uint256 total = vesting.totalClaim;
+        uint256 claimed = vesting.claimed;
+
+        // If vesting period is complete, return remaining unclaimed amount
+        if (current >= end) {
+            unchecked {
+                // Safe to use unchecked as totalClaim >= claimed is invariant
+                return (vesting, total - claimed);
+            }
         }
 
-        uint256 timeSinceLastClaim = block.timestamp - vesting.lastClaim;
-        uint256 vestingPeriod = vestingEnd - vestingStart;
-        amount = (vestingTotal * timeSinceLastClaim) / vestingPeriod;
+        // Calculate time-based vesting
+        unchecked {
+            // These operations cannot overflow due to the previous timestamp checks
+            uint256 timeSinceLastClaim = current - vesting.lastClaim;
+            uint256 vestingPeriod = end - start;
+            amount = (total * timeSinceLastClaim) / vestingPeriod;
+        }
     }
 
     /// @notice Get the vesting details
