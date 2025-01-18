@@ -120,7 +120,7 @@ contract MultiRootVesting is Ownable {
         }
 
         // Calculate vested amount
-        (, uint256 amount) = _vestedAmount(leaf);
+        (, uint256 amount) = calculateVesting(leaf);
         if (amount == 0) revert AlreadyClaimed();
 
         // Get or initialize vesting
@@ -164,14 +164,14 @@ contract MultiRootVesting is Ownable {
     ) external view returns (uint256 amount) {
         if (uint8(collection) >= 12) revert InvalidCollection();
         bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, amount_, start, end));
-        (, amount) = _vestedAmount(leaf);
+        (, amount) = calculateVesting(leaf);
     }
 
     /// @notice Internal function to get the vested amount
     /// @param vestingId The vesting identifier
     /// @return vesting The vesting struct
     /// @return amount The amount vested
-    function _vestedAmount(bytes32 vestingId) internal view returns (Vesting storage vesting, uint256 amount) {
+    function calculateVesting(bytes32 vestingId) internal view returns (Vesting storage vesting, uint256 amount) {
         vesting = vestings[vestingId];
 
         uint256 vestingStart = vesting.start;
