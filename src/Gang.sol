@@ -3,14 +3,15 @@ pragma solidity ^0.8.21;
 
 import "@solady/src/tokens/ERC20.sol";
 
-/**
- * @title Gang Token
- */
+/// @title Gang Token
+/// @notice ERC20 Token
+/// @author Rookmate (@0xRookmate)
 contract Gang is ERC20 {
-    string private _name = "Gang Gang"; // TODO: CHECK FINAL NAME WITH THE TEAM
-    string private _symbol = "GANG"; // TODO: CHECK FINAL SYMBOL WITH THE TEAM
-    uint8 private immutable _decimals = 18; // TODO: CHECK FINAL DECIMALS WITH THE TEAM
-    uint256 public immutable MAX_SUPPLY = 10_000_000_000 * (10 ** 18); // TODO: CHECK TOTAL WITH THE TEAM
+    // TODO: CHECK FINAL DECISION WITH THE TEAM
+    string private _name = "Gang Token";
+    string private _symbol = "GANG";
+    uint8 private immutable _decimals = 18;
+    uint256 public immutable MAX_SUPPLY = 1_000_000_000 * (10 ** 18);
 
     constructor() {
         _mint(msg.sender, MAX_SUPPLY);
