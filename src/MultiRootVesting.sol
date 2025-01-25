@@ -15,6 +15,7 @@ interface IERC721 {
 /// @author Rookmate (@0xRookmate)
 contract MultiRootVesting is Ownable {
     address immutable vestingToken;
+    bool public rootsLocked;
 
     enum Collection {
         Cat, // NFT Collection
@@ -31,11 +32,6 @@ contract MultiRootVesting is Ownable {
         Liquidity
     }
 
-    struct MerkleRootData {
-        bytes32 root;
-        bool locked;
-    }
-
     struct Vesting {
         uint256 totalClaim;
         uint256 claimed;
@@ -47,8 +43,8 @@ contract MultiRootVesting is Ownable {
         Collection collection;
     }
 
-    // Mapping from Collection to its merkle root data
-    mapping(Collection => MerkleRootData) public collectionRoots;
+    // Mapping from Collection to its merkle root
+    mapping(Collection => bytes32) public collectionRoots;
     // Mapping from Collection to its NFT address
     mapping(Collection => address) public nftCollections;
     // Mapping from vesting hash to vesting data
@@ -65,7 +61,7 @@ contract MultiRootVesting is Ownable {
     error CollectionNotConfigured();
 
     event MerkleRootUpdated(Collection indexed collection, bytes32 newRoot);
-    event CollectionRootLocked(Collection indexed collection);
+    event RootsLocked();
     event VestingClaimed(bytes32 indexed vestingId, Collection indexed collection, address recipient, uint256 amount);
 
     constructor(
@@ -89,7 +85,7 @@ contract MultiRootVesting is Ownable {
 
         // Set up merkle roots
         for (uint256 i = 0; i < collections.length; ++i) {
-            collectionRoots[collections[i]].root = roots[i];
+            collectionRoots[collections[i]] = roots[i];
         }
     }
 
@@ -97,16 +93,15 @@ contract MultiRootVesting is Ownable {
     /// @param collection The collection to update
     /// @param newRoot The new merkle root
     function updateMerkleRoot(Collection collection, bytes32 newRoot) external onlyOwner {
-        if (collectionRoots[collection].locked) revert RootLocked();
-        collectionRoots[collection].root = newRoot;
+        if (rootsLocked) revert RootLocked();
+        collectionRoots[collection] = newRoot;
         emit MerkleRootUpdated(collection, newRoot);
     }
 
-    /// @notice Lock the merkle root for a specific collection permanently
-    /// @param collection The collection to lock
-    function lockRoot(Collection collection) external onlyOwner {
-        collectionRoots[collection].locked = true;
-        emit CollectionRootLocked(collection);
+    /// @notice Lock all merkle roots permanently
+    function lockRoots() external onlyOwner {
+        rootsLocked = true;
+        emit RootsLocked();
     }
 
     /// @notice Claim vested tokens with merkle proof
@@ -133,7 +128,7 @@ contract MultiRootVesting is Ownable {
         bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, totalClaim, start, end));
 
         // Verify merkle proof against collection root
-        if (!MerkleProofLib.verifyCalldata(proof, collectionRoots[collection].root, leaf)) {
+        if (!MerkleProofLib.verifyCalldata(proof, collectionRoots[collection], leaf)) {
             revert InvalidMerkleProof();
         }
 
@@ -184,7 +179,7 @@ contract MultiRootVesting is Ownable {
         uint256 start = vesting.start;
         uint256 current = block.timestamp;
 
-        // Early return if vesting hasn't started
+        // Early return if vesting hasn't started or if it hasn't passed a day since last claim
         if (current < start || current < (vesting.lastClaim + 1 days)) {
             return (vesting, 0);
         }

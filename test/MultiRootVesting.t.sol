@@ -20,23 +20,21 @@ contract MultiRootVestingTest is MultiRootVestingTestBase {
 
     function testInitialSetup() public view {
         for (uint256 i = 0; i < collections.length; i++) {
-            (bytes32 root, bool locked) = vestContract.collectionRoots(collections[i]);
+            bytes32 root = vestContract.collectionRoots(collections[i]);
             assert(root == roots[i]);
-            assert(!locked);
         }
     }
 
-    function testLockRoot() public {
+    function testLockRoots() public {
         vm.prank(owner);
-        vestContract.lockRoot(MultiRootVesting.Collection.Cat);
+        vestContract.lockRoots();
 
-        (, bool locked) = vestContract.collectionRoots(MultiRootVesting.Collection.Cat);
-        assertTrue(locked);
+        assertTrue(vestContract.rootsLocked());
     }
 
-    function testCannotUpdateLockedRoot() public {
+    function testCannotUpdateRootAfterLock() public {
         vm.startPrank(owner);
-        vestContract.lockRoot(MultiRootVesting.Collection.Cat);
+        vestContract.lockRoots();
 
         vm.expectRevert(abi.encodeWithSignature("RootLocked()"));
         vestContract.updateMerkleRoot(MultiRootVesting.Collection.Cat, bytes32(0));
@@ -50,7 +48,7 @@ contract MultiRootVestingTest is MultiRootVestingTestBase {
         vm.prank(owner);
         vestContract.updateMerkleRoot(MultiRootVesting.Collection.Cat, newRoot);
 
-        (bytes32 root,) = vestContract.collectionRoots(MultiRootVesting.Collection.Cat);
+        bytes32 root = vestContract.collectionRoots(MultiRootVesting.Collection.Cat);
         assertEq(root, newRoot);
     }
 
