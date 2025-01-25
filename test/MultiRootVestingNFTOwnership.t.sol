@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import "forge-std/Test.sol";
-import "@murky/Merkle.sol";
-import "./MultiRootVesting.t.sol";
+import "./MultiRootVestingTestBase.sol";
 
 // Extended IERC721 interface with required functions
 interface IERC721Extended {
@@ -11,7 +9,7 @@ interface IERC721Extended {
     function transferFrom(address from, address to, uint256 tokenId) external;
 }
 
-contract MultiRootVestingNFTOwnershipTest is MultiRootVestingTest {
+contract MultiRootVestingNFTOwnershipTest is MultiRootVestingTestBase {
     address newOwner = address(0x6);
     uint256 constant NFT_ID = 1;
     uint256 constant VESTING_AMOUNT = 100e18;
