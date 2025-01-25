@@ -185,7 +185,9 @@ contract MultiRootVesting is Ownable {
         uint256 current = block.timestamp;
 
         // Early return if vesting hasn't started
-        if (current < start) return (vesting, 0);
+        if (current < start || current < (vesting.lastClaim + 1 days)) {
+            return (vesting, 0);
+        }
 
         uint256 end = vesting.end;
         uint256 total = vesting.totalClaim;

@@ -254,6 +254,54 @@ contract MultiRootVestingTest is Test {
         vm.stopPrank();
     }
 
+    function testCannotClaimWithinOneDayOfPreviousClaim() public {
+        uint256 amount = 100e18;
+        uint32 start = uint32(block.timestamp);
+        uint32 end = uint32(block.timestamp + 365 days);
+
+        bytes32[] memory proof = merkle.getProof(catLeaves, 0);
+
+        // Move to after vesting start
+        vm.warp(start + 1 days);
+
+        vm.prank(user1);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+
+        // Try to claim again within 1 day
+        vm.warp(start + 1.5 days);
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+    }
+
+    function testCanClaimAfterOneDayOfPreviousClaim() public {
+        uint256 amount = 100e18;
+        uint32 start = uint32(block.timestamp);
+        uint32 end = uint32(block.timestamp + 365 days);
+
+        bytes32[] memory proof = merkle.getProof(catLeaves, 0);
+
+        // Move to after vesting start
+        vm.warp(start + 1 days);
+
+        vm.prank(user1);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+
+        // Move forward more than 1 day
+        vm.warp(start + 2 days);
+
+        vm.prank(user1);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+
+        // Verify some tokens were claimed
+        (MultiRootVesting.Vesting memory vesting,) =
+            vestContract.getVesting(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+
+        assertGt(vesting.claimed, 0);
+        assertLt(vesting.claimed, amount);
+    }
+
     function testVestedAmountCalculation() public {
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
