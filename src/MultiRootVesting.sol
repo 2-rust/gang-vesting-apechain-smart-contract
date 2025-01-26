@@ -14,7 +14,9 @@ interface IERC721 {
 /// @notice Token vesting with multiple merkle roots for different collections
 /// @author Rookmate (@0xRookmate)
 contract MultiRootVesting is Ownable {
-    address immutable vestingToken;
+    address public immutable vestingToken;
+    address public ecosystemAddress;
+    uint32 public immutable expiryWindow = 69 days;
     bool public rootsLocked;
 
     enum Collection {
@@ -43,21 +45,22 @@ contract MultiRootVesting is Ownable {
         Collection collection;
     }
 
+    // Mapping from vesting hash to vesting data
+    mapping(bytes32 => Vesting) public vestings;
     // Mapping from Collection to its merkle root
     mapping(Collection => bytes32) public collectionRoots;
     // Mapping from Collection to its NFT address
     mapping(Collection => address) public nftCollections;
-    // Mapping from vesting hash to vesting data
-    mapping(bytes32 => Vesting) public vestings;
 
-    error InvalidAddress();
-    error InvalidAmount();
-    error InvalidTimestamp();
     error NotOwner();
-    error InvalidMerkleProof();
     error RootLocked();
+    error InvalidAmount();
+    error InvalidAddress();
     error AlreadyClaimed();
+    error InvalidTimestamp();
     error InvalidCollection();
+    error InvalidMerkleProof();
+    error EcosystemClaimTooEarly();
     error CollectionNotConfigured();
 
     event MerkleRootUpdated(Collection indexed collection, bytes32 newRoot);
@@ -102,6 +105,14 @@ contract MultiRootVesting is Ownable {
     function lockRoots() external onlyOwner {
         rootsLocked = true;
         emit RootsLocked();
+    }
+
+    /// @notice Set the ecosystem address (only owner)
+    /// @param _ecosystemAddress The address of the ecosystem
+    function setEcosystemAddress(address _ecosystemAddress) external onlyOwner {
+        if (rootsLocked) revert RootLocked();
+        if (_ecosystemAddress == address(0)) revert InvalidAddress();
+        ecosystemAddress = _ecosystemAddress;
     }
 
     /// @notice Claim vested tokens with merkle proof
@@ -169,6 +180,40 @@ contract MultiRootVesting is Ownable {
         emit VestingClaimed(leaf, collection, recipient, amount);
     }
 
+    /// @notice Claim unclaimed funds for ecosystem after 69 days from vesting end
+    /// @param leaf The vesting identifier
+    function claimEcosystemFunds(bytes32 leaf) external {
+        Vesting storage vesting = vestings[leaf];
+
+        // Ensure the vesting is for the Ecosystem collection
+        if (vesting.collection != Collection.Ecosystem) {
+            revert InvalidCollection();
+        }
+
+        // Check if 69 days have passed since the end date
+        uint256 claimWindow = vesting.end + expiryWindow;
+        if (block.timestamp < claimWindow) {
+            revert EcosystemClaimTooEarly();
+        }
+
+        // Calculate unclaimed amount
+        uint256 unclaimedAmount = vesting.totalClaim - vesting.claimed;
+
+        // Ensure there are unclaimed funds
+        if (unclaimedAmount == 0) {
+            return;
+        }
+
+        // Transfer unclaimed funds to the ecosystem address
+        SafeTransferLib.safeTransfer(vestingToken, address(this), unclaimedAmount);
+
+        // Mark the full amount as claimed
+        vesting.claimed = vesting.totalClaim;
+
+        // Emit an event for transparency
+        emit VestingClaimed(leaf, vesting.collection, ecosystemAddress, unclaimedAmount);
+    }
+
     /// @notice Internal function to get the vested amount
     /// @param leaf The vesting identifier
     /// @return vesting The vesting struct
@@ -191,6 +236,9 @@ contract MultiRootVesting is Ownable {
         // If vesting period is complete, return remaining unclaimed amount
         if (current >= end) {
             unchecked {
+                if (current > (end + expiryWindow)) {
+                    return (vesting, 0);
+                }
                 // Safe to use unchecked as totalClaim >= claimed is invariant
                 return (vesting, total - claimed);
             }
