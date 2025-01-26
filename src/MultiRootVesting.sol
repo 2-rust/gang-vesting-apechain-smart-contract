@@ -186,7 +186,7 @@ contract MultiRootVesting is Ownable {
         Vesting storage vesting = vestings[leaf];
 
         // Ensure the vesting is for the Ecosystem collection
-        if (vesting.collection != Collection.Ecosystem) {
+        if (vesting.collection == Collection.Ecosystem) {
             revert InvalidCollection();
         }
 
@@ -205,7 +205,7 @@ contract MultiRootVesting is Ownable {
         }
 
         // Transfer unclaimed funds to the ecosystem address
-        SafeTransferLib.safeTransfer(vestingToken, address(this), unclaimedAmount);
+        SafeTransferLib.safeTransfer(vestingToken, ecosystemAddress, unclaimedAmount);
 
         // Mark the full amount as claimed
         vesting.claimed = vesting.totalClaim;

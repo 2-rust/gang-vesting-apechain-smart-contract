@@ -205,6 +205,64 @@ contract MultiRootVestingTest is MultiRootVestingTestBase {
         assertEq(token.balanceOf(user1), amount);
     }
 
+    function testCannotClaimAfterExpiration() public {
+        uint256 amount = 100e18;
+        uint32 start = uint32(block.timestamp);
+        uint32 end = uint32(block.timestamp + 365 days);
+
+        bytes32[] memory proof = merkle.getProof(catLeaves, 0);
+
+        // Claim initial vesting
+        vm.startPrank(user1);
+        vm.warp(start + 1 days);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        vm.stopPrank();
+
+        // Move past end and 69 days
+        vm.warp(end + 70 days);
+
+        // Try to claim again
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+    }
+
+    function testWithdrawExpiredFunds() public {
+        uint256 amount = 100e18;
+        uint32 start = uint32(block.timestamp);
+        uint32 end = uint32(block.timestamp + 365 days);
+
+        bytes32[] memory proof = merkle.getProof(catLeaves, 0);
+
+        // Set ecosystem address
+        vm.prank(owner);
+        vestContract.setEcosystemAddress(owner);
+
+        // Claim initial vesting
+        vm.startPrank(user1);
+        vm.warp(start + 1 days);
+        vestContract.claim(proof, MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end);
+        vm.stopPrank();
+
+        // Move past end and 69 days
+        vm.warp(end + 70 days);
+
+        // Check initial balance
+        uint256 initialEcosystemBalance = token.balanceOf(owner);
+
+        // Withdraw expired funds
+        vm.prank(owner);
+        // Claim expired funds accumulated
+        bytes32 leaf =
+            keccak256(abi.encodePacked(MultiRootVesting.Collection.Cat, uint256(1), user1, amount, start, end));
+        vestContract.claimEcosystemFunds(leaf);
+
+        // Check balance increased
+        uint256 finalEcosystemBalance = token.balanceOf(owner);
+
+        assertGt(finalEcosystemBalance, initialEcosystemBalance);
+    }
+
     function testInvalidProof() public {
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
