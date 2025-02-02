@@ -185,11 +185,6 @@ contract MultiRootVesting is Ownable {
     function claimEcosystemFunds(bytes32 leaf) external {
         Vesting storage vesting = vestings[leaf];
 
-        // Ensure the vesting is for the Ecosystem collection
-        if (vesting.collection == Collection.Ecosystem) {
-            revert InvalidCollection();
-        }
-
         // Check if 69 days have passed since the end date
         uint256 claimWindow = vesting.end + expiryWindow;
         if (block.timestamp < claimWindow) {
