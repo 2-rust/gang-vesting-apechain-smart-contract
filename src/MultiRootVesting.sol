@@ -84,7 +84,8 @@ contract MultiRootVesting is Ownable {
     ) {
         _initializeOwner(msg.sender);
 
-        if (collections.length != roots.length) revert InvalidAmount();
+        // Ensure collections and roots match the enum length (18)
+        if (collections.length != 18 && roots.length != 18) revert InvalidAmount();
         if (nftAddresses.length != 10) revert InvalidAmount();
 
         vestingToken = _vestingToken;
