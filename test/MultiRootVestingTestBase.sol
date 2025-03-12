@@ -69,7 +69,6 @@ contract MultiRootVestingTestBase is Test {
         setupTestData();
 
         // Set up NFT addresses array for all 10 NFT collections
-        // This matches the check in the contract constructor: if (nftAddresses.length != 10) revert InvalidAmount();
         nftAddresses = [
             address(catNFT),
             address(ratNFT),
@@ -100,17 +99,26 @@ contract MultiRootVestingTestBase is Test {
     }
 
     function setupTestData() internal {
-        // Setup collections array with all collections being tested
-        collections = [
-            MultiRootVesting.Collection.Cat,
-            MultiRootVesting.Collection.Team,
-            MultiRootVesting.Collection.SeedRound,
-            MultiRootVesting.Collection.StrategicRound,
-            MultiRootVesting.Collection.CommunityPresale,
-            MultiRootVesting.Collection.Ecosystem,
-            MultiRootVesting.Collection.Apechain,
-            MultiRootVesting.Collection.Liquidity
-        ];
+        // Setup collections array with all 18 collections
+        collections = new MultiRootVesting.Collection[](18);
+        collections[0] = MultiRootVesting.Collection.Cat;
+        collections[1] = MultiRootVesting.Collection.Rat;
+        collections[2] = MultiRootVesting.Collection.Dog;
+        collections[3] = MultiRootVesting.Collection.Pigeon;
+        collections[4] = MultiRootVesting.Collection.BAYC;
+        collections[5] = MultiRootVesting.Collection.MAYC;
+        collections[6] = MultiRootVesting.Collection.n1force;
+        collections[7] = MultiRootVesting.Collection.kanpaiPandas;
+        collections[8] = MultiRootVesting.Collection.quirkies;
+        collections[9] = MultiRootVesting.Collection.geezOnApe;
+        collections[10] = MultiRootVesting.Collection.Crab;
+        collections[11] = MultiRootVesting.Collection.Team;
+        collections[12] = MultiRootVesting.Collection.SeedRound;
+        collections[13] = MultiRootVesting.Collection.StrategicRound;
+        collections[14] = MultiRootVesting.Collection.CommunityPresale;
+        collections[15] = MultiRootVesting.Collection.Ecosystem;
+        collections[16] = MultiRootVesting.Collection.Apechain;
+        collections[17] = MultiRootVesting.Collection.Liquidity;
 
         // Create test data for Cat collection
         catLeaves = new bytes32[](2);
@@ -296,15 +304,25 @@ contract MultiRootVestingTestBase is Test {
             )
         );
 
-        // Generate roots for each collection
-        roots = new bytes32[](8);
-        roots[0] = merkle.getRoot(catLeaves);
-        roots[1] = merkle.getRoot(teamLeaves);
-        roots[2] = merkle.getRoot(seedLeaves);
-        roots[3] = merkle.getRoot(strategicLeaves);
-        roots[4] = merkle.getRoot(communityPresaleLeaves);
-        roots[5] = merkle.getRoot(ecosystemLeaves);
-        roots[6] = merkle.getRoot(apechainLeaves);
-        roots[7] = merkle.getRoot(liquidityLeaves);
+        // Generate roots for all 18 collections
+        roots = new bytes32[](18);
+        roots[0] = merkle.getRoot(catLeaves); // Cat
+        roots[1] = keccak256(abi.encodePacked("dummy root for Rat")); // Rat
+        roots[2] = keccak256(abi.encodePacked("dummy root for Dog")); // Dog
+        roots[3] = keccak256(abi.encodePacked("dummy root for Pigeon")); // Pigeon
+        roots[4] = keccak256(abi.encodePacked("dummy root for BAYC")); // BAYC
+        roots[5] = keccak256(abi.encodePacked("dummy root for MAYC")); // MAYC
+        roots[6] = keccak256(abi.encodePacked("dummy root for n1force")); // n1force
+        roots[7] = keccak256(abi.encodePacked("dummy root for kanpaiPandas")); // kanpaiPandas
+        roots[8] = keccak256(abi.encodePacked("dummy root for quirkies")); // quirkies
+        roots[9] = keccak256(abi.encodePacked("dummy root for geezOnApe")); // geezOnApe
+        roots[10] = keccak256(abi.encodePacked("dummy root for Crab")); // Crab
+        roots[11] = merkle.getRoot(teamLeaves); // Team
+        roots[12] = merkle.getRoot(seedLeaves); // SeedRound
+        roots[13] = merkle.getRoot(strategicLeaves); // StrategicRound
+        roots[14] = merkle.getRoot(communityPresaleLeaves); // CommunityPresale
+        roots[15] = merkle.getRoot(ecosystemLeaves); // Ecosystem
+        roots[16] = merkle.getRoot(apechainLeaves); // Apechain
+        roots[17] = merkle.getRoot(liquidityLeaves); // Liquidity
     }
 }
