@@ -116,7 +116,7 @@ contract MultiRootVestingTestBase is Test {
         catLeaves = new bytes32[](2);
         catLeaves[0] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.Cat),
+                MultiRootVesting.Collection.Cat,
                 uint256(1),
                 user1,
                 uint256(100e18),
@@ -126,7 +126,7 @@ contract MultiRootVestingTestBase is Test {
         );
         catLeaves[1] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.Cat),
+                MultiRootVesting.Collection.Cat,
                 uint256(2),
                 user2,
                 uint256(200e18),
@@ -139,7 +139,7 @@ contract MultiRootVestingTestBase is Test {
         teamLeaves = new bytes32[](2);
         teamLeaves[0] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.Team),
+                MultiRootVesting.Collection.Team,
                 uint256(1),
                 user3,
                 uint256(300e18),
@@ -149,7 +149,7 @@ contract MultiRootVestingTestBase is Test {
         );
         teamLeaves[1] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.Team),
+                MultiRootVesting.Collection.Team,
                 uint256(2),
                 user4,
                 uint256(150e18),
@@ -162,7 +162,7 @@ contract MultiRootVestingTestBase is Test {
         seedLeaves = new bytes32[](2);
         seedLeaves[0] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.SeedRound),
+                MultiRootVesting.Collection.SeedRound,
                 uint256(1),
                 user1,
                 uint256(400e18),
@@ -172,7 +172,7 @@ contract MultiRootVestingTestBase is Test {
         );
         seedLeaves[1] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.SeedRound),
+                MultiRootVesting.Collection.SeedRound,
                 uint256(2),
                 user2,
                 uint256(200e18),
@@ -185,7 +185,7 @@ contract MultiRootVestingTestBase is Test {
         strategicLeaves = new bytes32[](2);
         strategicLeaves[0] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.StrategicRound),
+                MultiRootVesting.Collection.StrategicRound,
                 uint256(1),
                 user3,
                 uint256(250e18),
@@ -195,7 +195,7 @@ contract MultiRootVestingTestBase is Test {
         );
         strategicLeaves[1] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.StrategicRound),
+                MultiRootVesting.Collection.StrategicRound,
                 uint256(2),
                 user4,
                 uint256(175e18),
@@ -208,7 +208,7 @@ contract MultiRootVestingTestBase is Test {
         communityPresaleLeaves = new bytes32[](2);
         communityPresaleLeaves[0] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.CommunityPresale),
+                MultiRootVesting.Collection.CommunityPresale,
                 uint256(1),
                 user1,
                 uint256(50e18),
@@ -218,7 +218,7 @@ contract MultiRootVestingTestBase is Test {
         );
         communityPresaleLeaves[1] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.CommunityPresale),
+                MultiRootVesting.Collection.CommunityPresale,
                 uint256(2),
                 user2,
                 uint256(75e18),
@@ -231,7 +231,7 @@ contract MultiRootVestingTestBase is Test {
         ecosystemLeaves = new bytes32[](2);
         ecosystemLeaves[0] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.Ecosystem),
+                MultiRootVesting.Collection.Ecosystem,
                 uint256(1),
                 user3,
                 uint256(500e18),
@@ -241,7 +241,7 @@ contract MultiRootVestingTestBase is Test {
         );
         ecosystemLeaves[1] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.Ecosystem),
+                MultiRootVesting.Collection.Ecosystem,
                 uint256(2),
                 user4,
                 uint256(350e18),
@@ -254,7 +254,7 @@ contract MultiRootVestingTestBase is Test {
         apechainLeaves = new bytes32[](2);
         apechainLeaves[0] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.Apechain),
+                MultiRootVesting.Collection.Apechain,
                 uint256(1),
                 user1,
                 uint256(125e18),
@@ -264,7 +264,7 @@ contract MultiRootVestingTestBase is Test {
         );
         apechainLeaves[1] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.Apechain),
+                MultiRootVesting.Collection.Apechain,
                 uint256(2),
                 user2,
                 uint256(225e18),
@@ -277,7 +277,7 @@ contract MultiRootVestingTestBase is Test {
         liquidityLeaves = new bytes32[](2);
         liquidityLeaves[0] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.Liquidity),
+                MultiRootVesting.Collection.Liquidity,
                 uint256(1),
                 user3,
                 uint256(600e18),
@@ -287,7 +287,7 @@ contract MultiRootVestingTestBase is Test {
         );
         liquidityLeaves[1] = keccak256(
             abi.encodePacked(
-                uint8(MultiRootVesting.Collection.Liquidity),
+                MultiRootVesting.Collection.Liquidity,
                 uint256(2),
                 user4,
                 uint256(450e18),
