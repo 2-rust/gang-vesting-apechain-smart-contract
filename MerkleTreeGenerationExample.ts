@@ -1,12 +1,18 @@
 import { StandardMerkleTree } from "@openzeppelin/merkle-tree";
 import { ethers } from "ethers";
 
-// Define the Collection enum to match the contract
+// Define the Collection enum to match the contract (18 values)
 enum Collection {
   Cat,
   Rat,
   Dog,
   Pigeon,
+  BAYC,
+  MAYC,
+  n1force,
+  kanpaiPandas,
+  quirkies,
+  geezOnApe,
   Crab,
   Team,
   SeedRound,
@@ -30,32 +36,50 @@ export class VestingMerkleGenerator {
   private trees: Map<Collection, StandardMerkleTree<any[]>> = new Map();
 
   /**
-   * Generate merkle trees for each collection
-   * @param vestingDataByCollection Map of collection to their vesting data
-   * @returns Map of collection to their merkle roots
+   * Generate merkle trees for each of the 18 collections
+   * @param vestingDataByCollection Map of collection to their vesting data (partial or full)
+   * @returns Map of all 18 collections to their merkle roots
    */
   generateMerkleRoots(vestingDataByCollection: Map<Collection, VestingData[]>): Map<Collection, string> {
     const roots = new Map<Collection, string>();
 
-    for (const [collection, vestingData] of vestingDataByCollection.entries()) {
+    // Ensure all 18 collections are processed
+    for (let i = 0; i < 18; i++) {
+      const collection = i as Collection;
+      let vestingData = vestingDataByCollection.get(collection);
+
+      // If no specific vesting data provided, use a dummy entry
+      if (!vestingData || vestingData.length === 0) {
+        vestingData = [
+          {
+            collection: collection,
+            tokenId: BigInt(0),
+            recipient: ethers.ZeroAddress, // 0x0 as a placeholder
+            totalClaim: BigInt(0), // No claimable amount
+            start: Math.floor(Date.now() / 1000),
+            end: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60), // 1 year default
+          },
+        ];
+      }
+
       // Format the data for the merkle tree
-      const values = vestingData.map(data => [
+      const values = vestingData.map((data) => [
         data.collection,
         data.tokenId,
         data.recipient,
         data.totalClaim,
         data.start,
-        data.end
+        data.end,
       ]);
 
       // Create the merkle tree
       const tree = StandardMerkleTree.of(values, [
-        "uint8",    // collection
+        "uint8",    // collection (enum value)
         "uint256",  // tokenId
         "address",  // recipient
         "uint256",  // totalClaim
         "uint32",   // start
-        "uint32"    // end
+        "uint32",   // end
       ]);
 
       // Store tree for later proof generation
@@ -86,12 +110,19 @@ export class VestingMerkleGenerator {
       vestingData.recipient,
       vestingData.totalClaim,
       vestingData.start,
-      vestingData.end
+      vestingData.end,
     ];
 
-    // Find the leaf in the tree and generate proof
+    // Find the leaf in the tree and generate proof by comparing each element
     for (const [i, v] of tree.entries()) {
-      if (JSON.stringify(v) === JSON.stringify(targetValue)) {
+      if (
+        v[0] === targetValue[0] &&
+        v[1].toString() === targetValue[1].toString() &&
+        v[2] === targetValue[2] &&
+        v[3].toString() === targetValue[3].toString() &&
+        v[4] === targetValue[4] &&
+        v[5] === targetValue[5]
+      ) {
         return tree.getProof(i);
       }
     }
@@ -102,7 +133,7 @@ export class VestingMerkleGenerator {
 
 // Example usage
 async function main() {
-  // Sample vesting data for different collections
+  // Sample vesting data for some collections
   const vestingDataByCollection = new Map<Collection, VestingData[]>();
 
   // NFT Collection (Cat) example
@@ -110,12 +141,11 @@ async function main() {
     {
       collection: Collection.Cat,
       tokenId: BigInt(1),
-      recipient: "0x1234...",
+      recipient: "0x1234567890abcdef1234567890abcdef12345678",
       totalClaim: ethers.parseEther("1000"), // 1000 tokens
       start: Math.floor(Date.now() / 1000),
-      end: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) // 1 year
+      end: Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60, // 1 year
     },
-    // Add more Cat NFT vesting entries...
   ]);
 
   // Team vesting example
@@ -123,15 +153,14 @@ async function main() {
     {
       collection: Collection.Team,
       tokenId: BigInt(0), // Not used for non-NFT collections
-      recipient: "0x5678...",
+      recipient: "0x567890abcdef1234567890abcdef1234567890ab",
       totalClaim: ethers.parseEther("5000000"), // 5M tokens
       start: Math.floor(Date.now() / 1000),
-      end: Math.floor(Date.now() / 1000) + (2 * 365 * 24 * 60 * 60) // 2 years
+      end: Math.floor(Date.now() / 1000) + 2 * 365 * 24 * 60 * 60, // 2 years
     },
-    // Add more team vesting entries...
   ]);
 
-  // Generate merkle trees and get roots
+  // Generate merkle trees and get roots for all 18 collections
   const generator = new VestingMerkleGenerator();
   const roots = generator.generateMerkleRoots(vestingDataByCollection);
 
@@ -153,7 +182,7 @@ async function main() {
   const rootsArray = Array.from(roots.values());
 
   console.log("\nConstructor Parameters:");
-  console.log("collections:", collections);
+  console.log("collections:", collections.map((c) => Collection[c]));
   console.log("roots:", rootsArray);
 }
 
