@@ -13,7 +13,7 @@ contract MultiRootVestingTest is MultiRootVestingTestBase {
         vm.expectRevert(abi.encodeWithSignature("InvalidAmount()"));
         new MultiRootVesting(collections, roots, invalidNFTs, address(token));
 
-        address[] memory invalidAddresses = new address[](5);
+        address[] memory invalidAddresses = new address[](10);
         vm.expectRevert(abi.encodeWithSignature("InvalidAddress()"));
         new MultiRootVesting(collections, roots, invalidAddresses, address(token));
     }
@@ -277,11 +277,11 @@ contract MultiRootVestingTest is MultiRootVestingTestBase {
     }
 
     function testInvalidCollection() public {
-        // Create calldata for vestedAmount() with an invalid collection (value 12)
+        // Create calldata for getVesting() with an invalid collection (value 18)
         bytes memory callData = abi.encodeWithSignature(
-            "vestedAmount(uint8,address,address,uint256,uint32,uint32)",
-            12, // Invalid collection value
-            address(token),
+            "getVesting(uint8,uint256,address,uint256,uint32,uint32)",
+            18, // Invalid collection value
+            uint256(1),
             user1,
             100e18,
             uint32(block.timestamp),

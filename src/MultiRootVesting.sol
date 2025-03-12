@@ -20,11 +20,20 @@ contract MultiRootVesting is Ownable {
     bool public rootsLocked;
 
     enum Collection {
-        Cat, // NFT Collection
-        Rat, // NFT Collection
-        Dog, // NFT Collection
-        Pigeon, // NFT Collection
-        Crab, // NFT Collection
+        // MAINNET NFT Collections
+        Cat,
+        Rat,
+        Dog,
+        Pigeon,
+        BAYC,
+        MAYC,
+        n1force,
+        kanpaiPandas,
+        quirkies,
+        // APECHAIN NFT Collections
+        geezOnApe,
+        // SNAPSHOT Collections
+        Crab,
         Team,
         SeedRound,
         StrategicRound,
@@ -76,12 +85,12 @@ contract MultiRootVesting is Ownable {
         _initializeOwner(msg.sender);
 
         if (collections.length != roots.length) revert InvalidAmount();
-        if (nftAddresses.length != 5) revert InvalidAmount();
+        if (nftAddresses.length != 10) revert InvalidAmount();
 
         vestingToken = _vestingToken;
 
         // Set up NFT collection addresses
-        for (uint256 i = 0; i < 5; ++i) {
+        for (uint256 i = 0; i < 10; ++i) {
             if (nftAddresses[i] == address(0)) revert InvalidAddress();
             nftCollections[Collection(i)] = nftAddresses[i];
         }
@@ -133,7 +142,7 @@ contract MultiRootVesting is Ownable {
         uint32 end
     ) external {
         // Check collection validity
-        if (uint8(collection) >= 12) revert InvalidCollection();
+        if (uint8(collection) >= 18) revert InvalidCollection();
 
         // Generate leaf from vesting data
         bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, totalClaim, start, end));
@@ -167,7 +176,7 @@ contract MultiRootVesting is Ownable {
         }
 
         // For NFT collections, use true NFT owner as recipient
-        if (uint8(collection) < 5) {
+        if (uint8(collection) < 10) {
             // TODO: MODIFY ONCE WE ADD SHADOWS
             address owner = IERC721(nftCollections[collection]).ownerOf(tokenId);
             if (owner != vesting.recipient) {
@@ -264,7 +273,7 @@ contract MultiRootVesting is Ownable {
         uint32 start,
         uint32 end
     ) external view returns (Vesting memory, uint256 amount) {
-        if (uint8(collection) >= 12) revert InvalidCollection();
+        if (uint8(collection) >= 18) revert InvalidCollection();
         bytes32 leaf = keccak256(abi.encodePacked(collection, tokenId, recipient, totalClaim, start, end));
         return calculateVesting(leaf);
     }
