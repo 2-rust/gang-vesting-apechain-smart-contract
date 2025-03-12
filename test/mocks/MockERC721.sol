@@ -28,7 +28,7 @@ contract MockERC721 is ERC721 {
         return newTokenId;
     }
 
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+    function tokenURI(uint256) public view virtual override returns (string memory) {
         return "";
     }
 }

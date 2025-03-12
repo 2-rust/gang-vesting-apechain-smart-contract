@@ -11,6 +11,10 @@ contract DeployAll is Script {
         string memory rpc = "https://curtis.rpc.caldera.xyz/http";
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
+        // Derive and log the address from the private key
+        address deployer = vm.addr(privateKey);
+        console.log("Deployer address:", deployer);
+
         vm.createSelectFork(rpc);
         vm.startBroadcast(privateKey);
 
@@ -31,7 +35,7 @@ contract DeployAll is Script {
 
         // Mint an NFT to the deployer
         uint256 tokenId = mockERC721.mint(msg.sender);
-        console.log("Minted NFT with tokenId:", tokenId, "to:", msg.sender);
+        console.log("Minted NFT with tokenId:", tokenId, "to:", deployer);
 
         // Configure MultiRootVesting parameters with all 18 collections
         MultiRootVesting.Collection[] memory collections = new MultiRootVesting.Collection[](18);
@@ -64,9 +68,8 @@ contract DeployAll is Script {
         }
 
         // Set up NFT addresses for the first 10 collections (Cat to quirkies)
-        nftAddresses[0] = address(mockERC721); // Use MockERC721 for Cat
-        for (uint256 i = 1; i < 10; i++) {
-            nftAddresses[i] = address(uint160(i + 1)); // Dummy addresses for Rat to quirkies
+        for (uint256 i = 0; i < 10; i++) {
+            nftAddresses[i] = address(mockERC721);
         }
 
         // Deploy MultiRootVesting with MockERC20 as vesting token
