@@ -5,9 +5,9 @@ import "@solady/src/auth/Ownable.sol";
 import "@solady/src/utils/SafeTransferLib.sol";
 import "@solady/src/utils/MerkleProofLib.sol";
 
-/// @title SimpleVesting
+/// @title GangVesting
 /// @notice Token vesting with a single merkle root
-/// @author Simplified from Rookmate's MultiRootVesting
+/// @author Rookmate
 contract GangVesting is Ownable {
     address public immutable vestingToken;
     address public ecosystemAddress;
@@ -16,14 +16,35 @@ contract GangVesting is Ownable {
 
     bytes32 public merkleRoot;
 
+    enum Collection {
+        Cat,
+        Rat,
+        Dog,
+        Pigeon,
+        BAYC,
+        MAYC,
+        n1force,
+        kanpaiPandas,
+        quirkies,
+        geezOnApe,
+        Crab,
+        Team,
+        SeedRound,
+        StrategicRound,
+        CommunityPresale,
+        Ecosystem,
+        Apechain,
+        Liquidity
+    }
+
     struct Vesting {
         uint256 totalClaim;
         uint256 claimed;
-        uint256 tokenId;
         address recipient;
         uint32 start;
         uint32 end;
         uint32 lastClaim;
+        Collection collection;
     }
 
     // Mapping from vesting hash to vesting data
@@ -72,21 +93,21 @@ contract GangVesting is Ownable {
 
     /// @notice Claim vested tokens with merkle proof
     /// @param proof Merkle proof to validate the claim
-    /// @param tokenId The tokenId being vested
+    /// @param collection The collection associated with the vesting
     /// @param recipient The recipient of the vesting
     /// @param totalClaim The total amount being vested
     /// @param start The start time of the vesting
     /// @param end The end time of the vesting
     function claim(
         bytes32[] calldata proof,
-        uint256 tokenId,
+        Collection collection,
         address recipient,
         uint256 totalClaim,
         uint32 start,
         uint32 end
     ) external {
         // Generate leaf from vesting data
-        bytes32 leaf = keccak256(abi.encodePacked(tokenId, recipient, totalClaim, start, end));
+        bytes32 leaf = keccak256(abi.encodePacked(uint8(collection), recipient, totalClaim, start, end));
 
         // Verify merkle proof against root
         if (!MerkleProofLib.verifyCalldata(proof, merkleRoot, leaf)) {
@@ -98,7 +119,7 @@ contract GangVesting is Ownable {
         if (vesting.totalClaim == 0) {
             // Initialize vesting if first claim
             vesting.totalClaim = totalClaim;
-            vesting.tokenId = tokenId;
+            vesting.collection = collection;
             vesting.recipient = recipient;
             vesting.start = start;
             vesting.end = end;
@@ -190,23 +211,23 @@ contract GangVesting is Ownable {
     }
 
     /// @notice Get the vesting details for a single vesting
-    /// @param tokenId The tokenId being vested
+    /// @param collection The collection associated with the vesting
     /// @param recipient The recipient of the vesting
     /// @param totalClaim The total totalClaim being vested
     /// @param start The start time of the vesting
     /// @param end The end time of the vesting
     /// @return The vesting struct and current claimable amount
-    function getVesting(uint256 tokenId, address recipient, uint256 totalClaim, uint32 start, uint32 end)
+    function getVesting(Collection collection, address recipient, uint256 totalClaim, uint32 start, uint32 end)
         external
         view
         returns (Vesting memory, uint256 amount)
     {
-        bytes32 leaf = keccak256(abi.encodePacked(tokenId, recipient, totalClaim, start, end));
+        bytes32 leaf = keccak256(abi.encodePacked(uint8(collection), recipient, totalClaim, start, end));
         return calculateVesting(leaf);
     }
 
     /// @notice Get vesting details for multiple vestings at once
-    /// @param tokenIds Array of tokenIds
+    /// @param collections Array of collections
     /// @param recipients Array of recipients
     /// @param totalClaims Array of total claims
     /// @param starts Array of start times
@@ -214,14 +235,14 @@ contract GangVesting is Ownable {
     /// @return vestingInfo Array of vesting structs
     /// @return amounts Array of claimable amounts
     function getVestingBatch(
-        uint256[] calldata tokenIds,
+        Collection[] calldata collections,
         address[] calldata recipients,
         uint256[] calldata totalClaims,
         uint32[] calldata starts,
         uint32[] calldata ends
     ) external view returns (Vesting[] memory vestingInfo, uint256[] memory amounts) {
         // Check that all arrays have the same length
-        uint256 length = tokenIds.length;
+        uint256 length = collections.length;
         if (
             recipients.length != length || totalClaims.length != length || starts.length != length
                 || ends.length != length
@@ -231,18 +252,19 @@ contract GangVesting is Ownable {
         amounts = new uint256[](length);
 
         for (uint256 i = 0; i < length; i++) {
-            bytes32 leaf = keccak256(abi.encodePacked(tokenIds[i], recipients[i], totalClaims[i], starts[i], ends[i]));
+            bytes32 leaf =
+                keccak256(abi.encodePacked(uint8(collections[i]), recipients[i], totalClaims[i], starts[i], ends[i]));
             (Vesting storage info, uint256 amount) = calculateVesting(leaf);
 
             // Copy storage struct to memory
             vestingInfo[i] = Vesting({
                 totalClaim: info.totalClaim,
                 claimed: info.claimed,
-                tokenId: info.tokenId,
                 recipient: info.recipient,
                 start: info.start,
                 end: info.end,
-                lastClaim: info.lastClaim
+                lastClaim: info.lastClaim,
+                collection: info.collection
             });
 
             amounts[i] = amount;

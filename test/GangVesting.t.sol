@@ -29,7 +29,7 @@ contract GangVestingTest is Test {
 
         // Deploy mock tokens
         token = new MockERC20("Test Token", "TEST", 18);
-        nft = new MockERC721("Gang NFT", "GANG");
+        nft = new MockERC721("MOCK NFT", "MNFT");
 
         merkle = new Merkle();
         setupTestData();
@@ -53,17 +53,25 @@ contract GangVestingTest is Test {
         leaves = new bytes32[](3);
         leaves[0] = keccak256(
             abi.encodePacked(
-                uint256(1), user1, uint256(100e18), uint32(block.timestamp), uint32(block.timestamp + 365 days)
+                uint8(GangVesting.Collection.Cat),
+                user1,
+                uint256(100e18),
+                uint32(block.timestamp),
+                uint32(block.timestamp + 365 days)
             )
         );
         leaves[1] = keccak256(
             abi.encodePacked(
-                uint256(2), user2, uint256(200e18), uint32(block.timestamp), uint32(block.timestamp + 365 days)
+                uint8(GangVesting.Collection.Rat),
+                user2,
+                uint256(200e18),
+                uint32(block.timestamp),
+                uint32(block.timestamp + 365 days)
             )
         );
         leaves[2] = keccak256(
             abi.encodePacked(
-                uint256(3),
+                uint8(GangVesting.Collection.Dog),
                 user3,
                 uint256(300e18),
                 uint32(block.timestamp + 30 days),
@@ -107,7 +115,7 @@ contract GangVestingTest is Test {
     }
 
     function testClaimVesting() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -118,18 +126,18 @@ contract GangVestingTest is Test {
         vm.warp(start + 1 days);
 
         vm.prank(user1);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
-        (GangVesting.Vesting memory vesting,) = vestContract.getVesting(tokenId, user1, amount, start, end);
+        (GangVesting.Vesting memory vesting,) = vestContract.getVesting(collection, user1, amount, start, end);
 
         assertGt(vesting.claimed, 0);
         assertEq(vesting.totalClaim, amount);
         assertEq(vesting.recipient, user1);
-        assertEq(vesting.tokenId, tokenId);
+        assertEq(uint8(vesting.collection), uint8(collection));
     }
 
     function testCannotClaimTwice() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -141,16 +149,16 @@ contract GangVestingTest is Test {
 
         vm.startPrank(user1);
 
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
         vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
         vm.stopPrank();
     }
 
     function testCannotClaimWithinOneDayOfPreviousClaim() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -161,18 +169,18 @@ contract GangVestingTest is Test {
         vm.warp(start + 1 days);
 
         vm.prank(user1);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
         // Try to claim again within 1 day
         vm.warp(start + 1.5 days);
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
     }
 
     function testCanClaimAfterOneDayOfPreviousClaim() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -183,23 +191,23 @@ contract GangVestingTest is Test {
         vm.warp(start + 1 days);
 
         vm.prank(user1);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
         // Move forward more than 1 day
         vm.warp(start + 2 days);
 
         vm.prank(user1);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
         // Verify some tokens were claimed
-        (GangVesting.Vesting memory vesting,) = vestContract.getVesting(tokenId, user1, amount, start, end);
+        (GangVesting.Vesting memory vesting,) = vestContract.getVesting(collection, user1, amount, start, end);
 
         assertGt(vesting.claimed, 0);
         assertLt(vesting.claimed, amount);
     }
 
     function testVestedAmountCalculation() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -211,19 +219,19 @@ contract GangVestingTest is Test {
 
         // Claim at start
         vm.prank(user1);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
         // Move forward 181.5 days (50% of vesting period after first claim)
         vm.warp(block.timestamp + 181.5 days);
 
-        (, uint256 vestable) = vestContract.getVesting(tokenId, user1, amount, start, end);
+        (, uint256 vestable) = vestContract.getVesting(collection, user1, amount, start, end);
 
         // Should be roughly 50% of total amount
         assertApproxEqRel(vestable, amount / 2, 0.01e18); // 1% tolerance
     }
 
     function testClaimAfterEnd() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -234,14 +242,14 @@ contract GangVestingTest is Test {
         vm.warp(end + 1 days);
 
         vm.prank(user1);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
         // Should have received full amount
         assertEq(token.balanceOf(user1), amount);
     }
 
     function testCannotClaimAfterExpiration() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -251,7 +259,7 @@ contract GangVestingTest is Test {
         // Claim initial vesting
         vm.startPrank(user1);
         vm.warp(start + 1 days);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
         vm.stopPrank();
 
         // Move past end and 69 days
@@ -260,11 +268,11 @@ contract GangVestingTest is Test {
         // Try to claim again
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
     }
 
     function testWithdrawExpiredFunds() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -278,7 +286,7 @@ contract GangVestingTest is Test {
         // Claim initial vesting
         vm.startPrank(user1);
         vm.warp(start + 1 days);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
         vm.stopPrank();
 
         // Move past end and 69 days
@@ -288,7 +296,7 @@ contract GangVestingTest is Test {
         uint256 initialEcosystemBalance = token.balanceOf(ecosystemAddress);
 
         // Create leaf for ecosystem funds claim
-        bytes32 leaf = keccak256(abi.encodePacked(tokenId, user1, amount, start, end));
+        bytes32 leaf = keccak256(abi.encodePacked(uint8(collection), user1, amount, start, end));
 
         // Withdraw expired funds
         vm.prank(owner);
@@ -301,7 +309,7 @@ contract GangVestingTest is Test {
     }
 
     function testCannotClaimEcosystemFundsTooEarly() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -315,14 +323,14 @@ contract GangVestingTest is Test {
         // Claim initial vesting
         vm.startPrank(user1);
         vm.warp(start + 1 days);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
         vm.stopPrank();
 
         // Move past end but not past expiry window
         vm.warp(end + 30 days);
 
         // Create leaf for ecosystem funds claim
-        bytes32 leaf = keccak256(abi.encodePacked(tokenId, user1, amount, start, end));
+        bytes32 leaf = keccak256(abi.encodePacked(uint8(collection), user1, amount, start, end));
 
         // Try to withdraw expired funds too early
         vm.prank(owner);
@@ -331,7 +339,7 @@ contract GangVestingTest is Test {
     }
 
     function testInvalidProof() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -341,7 +349,7 @@ contract GangVestingTest is Test {
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSignature("InvalidMerkleProof()"));
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
     }
 
     function testSetEcosystemAddress() public {
@@ -368,14 +376,14 @@ contract GangVestingTest is Test {
     }
 
     function testGetVestingBatch() public {
-        uint256[] memory tokenIds = new uint256[](2);
+        GangVesting.Collection[] memory collections = new GangVesting.Collection[](2);
         address[] memory recipients = new address[](2);
         uint256[] memory totalClaims = new uint256[](2);
         uint32[] memory starts = new uint32[](2);
         uint32[] memory ends = new uint32[](2);
 
-        tokenIds[0] = 1;
-        tokenIds[1] = 2;
+        collections[0] = GangVesting.Collection.Cat;
+        collections[1] = GangVesting.Collection.Rat;
 
         recipients[0] = user1;
         recipients[1] = user2;
@@ -396,31 +404,31 @@ contract GangVestingTest is Test {
         vm.warp(block.timestamp + 10 days);
 
         vm.prank(user1);
-        vestContract.claim(proof1, tokenIds[0], recipients[0], totalClaims[0], starts[0], ends[0]);
+        vestContract.claim(proof1, collections[0], recipients[0], totalClaims[0], starts[0], ends[0]);
 
         vm.prank(user2);
-        vestContract.claim(proof2, tokenIds[1], recipients[1], totalClaims[1], starts[1], ends[1]);
+        vestContract.claim(proof2, collections[1], recipients[1], totalClaims[1], starts[1], ends[1]);
 
         // Get batch vestings
         (GangVesting.Vesting[] memory vestings, uint256[] memory amounts) =
-            vestContract.getVestingBatch(tokenIds, recipients, totalClaims, starts, ends);
+            vestContract.getVestingBatch(collections, recipients, totalClaims, starts, ends);
 
         assertEq(vestings.length, 2);
         assertEq(amounts.length, 2);
 
         // Check first vesting
-        assertEq(vestings[0].tokenId, tokenIds[0]);
+        assertEq(uint8(vestings[0].collection), uint8(collections[0]));
         assertEq(vestings[0].recipient, recipients[0]);
         assertEq(vestings[0].totalClaim, totalClaims[0]);
 
         // Check second vesting
-        assertEq(vestings[1].tokenId, tokenIds[1]);
+        assertEq(uint8(vestings[1].collection), uint8(collections[1]));
         assertEq(vestings[1].recipient, recipients[1]);
         assertEq(vestings[1].totalClaim, totalClaims[1]);
     }
 
     function testFullyVestedShouldReturnZeroClaimable() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -431,10 +439,10 @@ contract GangVestingTest is Test {
         vm.warp(end + 1 days);
 
         vm.prank(user1);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
         // Check that claimable amount is now zero
-        (, uint256 claimable) = vestContract.getVesting(tokenId, user1, amount, start, end);
+        (, uint256 claimable) = vestContract.getVesting(collection, user1, amount, start, end);
         assertEq(claimable, 0);
     }
 
@@ -458,7 +466,7 @@ contract GangVestingTest is Test {
     }
 
     function testClaimEcosystemFundsWithNoUnclaimed() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -473,7 +481,7 @@ contract GangVestingTest is Test {
         vm.warp(end + 1 days);
 
         vm.prank(user1);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
         // Move past expiry window
         vm.warp(end + 70 days);
@@ -482,7 +490,7 @@ contract GangVestingTest is Test {
         uint256 initialEcosystemBalance = token.balanceOf(ecosystemAddress);
 
         // Create leaf for ecosystem funds claim
-        bytes32 leaf = keccak256(abi.encodePacked(tokenId, user1, amount, start, end));
+        bytes32 leaf = keccak256(abi.encodePacked(uint8(collection), user1, amount, start, end));
 
         // Should execute without reverting but do nothing
         vm.prank(owner);
@@ -495,13 +503,13 @@ contract GangVestingTest is Test {
 
     // Test calling calculateVesting before start time
     function testCalculateVestingBeforeStart() public view {
-        uint256 tokenId = 3;
+        GangVesting.Collection collection = GangVesting.Collection.Dog;
         uint256 amount = 300e18;
         uint32 start = uint32(block.timestamp + 30 days);
         uint32 end = uint32(block.timestamp + 395 days);
 
         // Check vesting before start time
-        (, uint256 vestable) = vestContract.getVesting(tokenId, user3, amount, start, end);
+        (, uint256 vestable) = vestContract.getVesting(collection, user3, amount, start, end);
 
         // Should be 0 before start time
         assertEq(vestable, 0);
@@ -509,19 +517,19 @@ contract GangVestingTest is Test {
 
     // Test array length mismatch in getVestingBatch
     function testGetVestingBatchArrayMismatch() public {
-        uint256[] memory tokenIds = new uint256[](2);
+        GangVesting.Collection[] memory collections = new GangVesting.Collection[](2);
         address[] memory recipients = new address[](2);
         uint256[] memory totalClaims = new uint256[](3); // Mismatched length
         uint32[] memory starts = new uint32[](2);
         uint32[] memory ends = new uint32[](2);
 
         vm.expectRevert(abi.encodeWithSignature("ArrayLengthMustMatch()"));
-        vestContract.getVestingBatch(tokenIds, recipients, totalClaims, starts, ends);
+        vestContract.getVestingBatch(collections, recipients, totalClaims, starts, ends);
     }
 
     // Test vesting that's passed expiry window
     function testVestingPastExpiryWindowReturnsZero() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -529,7 +537,7 @@ contract GangVestingTest is Test {
         // Move far past the end date and expiry window
         vm.warp(end + 100 days);
 
-        (, uint256 vestable) = vestContract.getVesting(tokenId, user1, amount, start, end);
+        (, uint256 vestable) = vestContract.getVesting(collection, user1, amount, start, end);
 
         // Should be 0 after expiry window
         assertEq(vestable, 0);
@@ -537,7 +545,7 @@ contract GangVestingTest is Test {
 
     // Test that calculateVesting handles the case when lastClaim is very recent
     function testCannotCalculateVestingWithinOneDay() public {
-        uint256 tokenId = 1;
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
         uint32 end = uint32(block.timestamp + 365 days);
@@ -549,13 +557,13 @@ contract GangVestingTest is Test {
 
         // First claim
         vm.prank(user1);
-        vestContract.claim(proof, tokenId, user1, amount, start, end);
+        vestContract.claim(proof, collection, user1, amount, start, end);
 
         // Move forward less than a day
         vm.warp(block.timestamp + 23 hours);
 
         // Check that no new tokens are claimable
-        (, uint256 vestable) = vestContract.getVesting(tokenId, user1, amount, start, end);
+        (, uint256 vestable) = vestContract.getVesting(collection, user1, amount, start, end);
         assertEq(vestable, 0);
     }
 }

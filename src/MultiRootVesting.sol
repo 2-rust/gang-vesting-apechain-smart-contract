@@ -20,7 +20,6 @@ contract MultiRootVesting is Ownable {
     bool public rootsLocked;
 
     enum Collection {
-        // MAINNET NFT Collections
         Cat,
         Rat,
         Dog,
@@ -30,9 +29,7 @@ contract MultiRootVesting is Ownable {
         n1force,
         kanpaiPandas,
         quirkies,
-        // APECHAIN NFT Collections
         geezOnApe,
-        // SNAPSHOT Collections
         Crab,
         Team,
         SeedRound,
