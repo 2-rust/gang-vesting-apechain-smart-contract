@@ -221,12 +221,12 @@ Merkle Proof for first vesting: [
 ```bash
 cast send CONTRACT_ADDRESS \
 "claim(bytes32[],uint8,address,uint256,uint32,uint32)" \
-"[0x86d90af917e1de28b530e664df266fc7081c9b791bc19acdef13d791950df786,0x442e396fb9684817865b881f0a7bded188ddf389f6359235c4441b3eeddb4b2f]" \
+"[PROOF_LEAVES]" \
 0 \
-0x77f2Dc5d302e71Ab6645622FAB27123E52e3e035 \
-100000000000000000000 \
-1742644628 \
-1774180628 \
+CLAIM_ADDRESS \
+TOTAL_AMOUNT \
+START_TS \
+END_TS \
 --rpc-url https://rpc.curtis.apechain.com \
 --private-key $PRIVATE_KEY
 ```
