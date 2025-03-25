@@ -27,7 +27,7 @@ contract GangVesting is Ownable {
         kanpaiPandas,
         quirkies,
         geezOnApe,
-        Crab,
+        Grab,
         Team,
         SeedRound,
         StrategicRound,
