@@ -12,9 +12,9 @@ contract GangVesting is Ownable {
     address public immutable vestingToken;
     address public ecosystemAddress;
     uint32 public immutable expiryWindow = 69 days;
-    bool public rootLocked;
-
     bytes32 public merkleRoot;
+    bool public rootLocked;
+    uint256 public totalClaimed;
 
     enum Collection {
         Cat,
@@ -134,6 +134,7 @@ contract GangVesting is Ownable {
         vesting.lastClaim = uint32(block.timestamp);
         unchecked {
             vesting.claimed += amount;
+            totalClaimed += amount;
         }
 
         // Transfer tokens to recipient
