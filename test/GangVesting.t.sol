@@ -88,10 +88,22 @@ contract GangVestingTest is Test {
     }
 
     function testLockRoot() public {
-        vm.prank(owner);
+        address attacker = address(0x999);
+
+        // First, try to lock as a non-owner
+        vm.prank(attacker);
+        vm.expectRevert(); // Should revert due to not being owner
         vestContract.lockRoot();
 
+        // Then lock as the owner
+        vm.prank(owner);
+        vestContract.lockRoot();
         assertTrue(vestContract.rootLocked());
+
+        // Try to lock again (even by owner)
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("RootIsLocked()"));
+        vestContract.lockRoot();
     }
 
     function testCannotUpdateRootAfterLock() public {
@@ -541,5 +553,42 @@ contract GangVestingTest is Test {
 
         // Should be 0 after expiry window
         assertEq(vestable, 0);
+    }
+
+    function testVestingBeforeStartReturnsZero() public {
+        // Create a vesting that starts in the future
+        uint32 futureStart = uint32(block.timestamp + 30 days);
+        uint32 futureEnd = uint32(block.timestamp + 395 days);
+        uint256 amount = 300e18;
+
+        // Manually generate the hash for the single leaf
+        bytes32 futureLeaf =
+            keccak256(abi.encodePacked(uint8(GangVesting.Collection.Dog), user1, amount, futureStart, futureEnd));
+
+        // Manually create a single-element array for leaves
+        bytes32[] memory futureLeaves = new bytes32[](1);
+        futureLeaves[0] = futureLeaf;
+
+        // Manually generate root by returning the leaf itself if only one leaf
+        bytes32 futureRoot = futureLeaves[0];
+
+        // Redeploy contract with new root
+        vm.prank(owner);
+        vestContract = new GangVesting(futureRoot, address(token));
+
+        // Prepare merkle proof (which will be empty for a single leaf)
+        bytes32[] memory proof = new bytes32[](0);
+
+        // Check vesting details before start time
+        (, uint256 vestable) =
+            vestContract.getVesting(GangVesting.Collection.Dog, user1, amount, futureStart, futureEnd);
+
+        // Should be 0 before start time
+        assertEq(vestable, 0, "Vesting amount should be zero before start time");
+
+        // Attempt to claim before start time should also return zero
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
+        vestContract.claim(proof, GangVesting.Collection.Dog, user1, amount, futureStart, futureEnd);
     }
 }
