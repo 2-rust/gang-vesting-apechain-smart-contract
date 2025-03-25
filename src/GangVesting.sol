@@ -127,7 +127,7 @@ contract GangVesting is Ownable {
         }
 
         // Calculate vested amount
-        (, uint256 amount) = calculateVesting(leaf);
+        (, uint256 amount) = calculateVesting(leaf, true);
         if (amount == 0) revert AlreadyClaimed();
 
         // Update vesting state
@@ -176,14 +176,23 @@ contract GangVesting is Ownable {
     /// @param leaf The vesting identifier
     /// @return vesting The vesting struct
     /// @return amount The amount vested
-    function calculateVesting(bytes32 leaf) internal view returns (Vesting storage vesting, uint256 amount) {
+    function calculateVesting(bytes32 leaf, bool isClaim)
+        internal
+        view
+        returns (Vesting storage vesting, uint256 amount)
+    {
         vesting = vestings[leaf];
 
         uint256 start = vesting.start;
         uint256 current = block.timestamp;
 
-        // Early return if vesting hasn't started or if it hasn't passed a day since last claim
-        if (current < start || current < (vesting.lastClaim + 1 days)) {
+        // Early return if vesting hasn't started
+        if (current < start) {
+            return (vesting, 0);
+        }
+
+        // If it hasn't passed a day since last claim
+        if (isClaim && current < (vesting.lastClaim + 1 days)) {
             return (vesting, 0);
         }
 
@@ -224,7 +233,7 @@ contract GangVesting is Ownable {
         returns (Vesting memory, uint256 amount)
     {
         bytes32 leaf = keccak256(abi.encodePacked(uint8(collection), recipient, totalClaim, start, end));
-        return calculateVesting(leaf);
+        return calculateVesting(leaf, false);
     }
 
     /// @notice Get vesting details for multiple vestings at once
@@ -255,7 +264,7 @@ contract GangVesting is Ownable {
         for (uint256 i = 0; i < length; i++) {
             bytes32 leaf =
                 keccak256(abi.encodePacked(uint8(collections[i]), recipients[i], totalClaims[i], starts[i], ends[i]));
-            (Vesting storage info, uint256 amount) = calculateVesting(leaf);
+            (Vesting storage info, uint256 amount) = calculateVesting(leaf, false);
 
             // Copy storage struct to memory
             vestingInfo[i] = Vesting({

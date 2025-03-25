@@ -542,28 +542,4 @@ contract GangVestingTest is Test {
         // Should be 0 after expiry window
         assertEq(vestable, 0);
     }
-
-    // Test that calculateVesting handles the case when lastClaim is very recent
-    function testCannotCalculateVestingWithinOneDay() public {
-        GangVesting.Collection collection = GangVesting.Collection.Cat;
-        uint256 amount = 100e18;
-        uint32 start = uint32(block.timestamp);
-        uint32 end = uint32(block.timestamp + 365 days);
-
-        bytes32[] memory proof = merkle.getProof(leaves, 0);
-
-        // Move to after vesting start
-        vm.warp(start + 10 days);
-
-        // First claim
-        vm.prank(user1);
-        vestContract.claim(proof, collection, user1, amount, start, end);
-
-        // Move forward less than a day
-        vm.warp(block.timestamp + 23 hours);
-
-        // Check that no new tokens are claimable
-        (, uint256 vestable) = vestContract.getVesting(collection, user1, amount, start, end);
-        assertEq(vestable, 0);
-    }
 }
