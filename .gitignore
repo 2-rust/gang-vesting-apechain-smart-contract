@@ -1,6 +1,8 @@
 # Compiler files
 cache/
 out/
+coverage_report/
+lcov.info
 
 # Ignores development broadcast logs
 /broadcast
