@@ -30,7 +30,6 @@ contract GangVesting is Ownable {
         Grab,
         Team,
         SeedRound,
-        StrategicRound,
         CommunityPresale,
         Ecosystem,
         Apechain,

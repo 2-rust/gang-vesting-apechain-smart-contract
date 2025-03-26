@@ -2,8 +2,7 @@
 pragma solidity 0.8.21;
 
 import "forge-std/Script.sol";
-import "../test/mocks/MockERC20.sol";
-import "../test/mocks/MockERC721.sol";
+import "../src/Gang.sol";
 import "../src/GangVesting.sol";
 
 contract DeployGangVesting is Script {
@@ -18,22 +17,9 @@ contract DeployGangVesting is Script {
         vm.createSelectFork(rpc);
         vm.startBroadcast(privateKey);
 
-        // Deploy MockERC20 (to be used as vesting token)
-        string memory erc20Name = "MOCK Token";
-        string memory erc20Symbol = "GT20";
-        uint8 erc20Decimals = 18;
-        MockERC20 mockERC20 = new MockERC20(erc20Name, erc20Symbol, erc20Decimals);
-        console.log("MockERC20 deployed at:", address(mockERC20));
-
-        // Deploy MockERC721 (to simulate the Gang NFT collection)
-        string memory erc721Name = "MOCK NFT";
-        string memory erc721Symbol = "GNFT";
-        MockERC721 mockERC721 = new MockERC721(erc721Name, erc721Symbol);
-        console.log("MockERC721 deployed at:", address(mockERC721));
-
-        // Mint an NFT to the deployer
-        uint256 tokenId = mockERC721.mint(msg.sender);
-        console.log("Minted NFT with tokenId:", tokenId, "to:", deployer);
+        // Deploy ERC20 token
+        Gang gang = new Gang();
+        console.log("Gang deployed at:", address(gang));
 
         // Create sample data for Merkle tree (this would be generated off-chain in production)
         // Here we're just creating a dummy root for demonstration
@@ -41,7 +27,7 @@ contract DeployGangVesting is Script {
         console.log("Sample Merkle Root:", vm.toString(sampleMerkleRoot));
 
         // Deploy GangVesting with MockERC20 as vesting token
-        GangVesting vesting = new GangVesting(sampleMerkleRoot, address(mockERC20));
+        GangVesting vesting = new GangVesting(sampleMerkleRoot, address(gang));
         console.log("GangVesting deployed at:", address(vesting));
 
         // Set ecosystem address for expired funds
@@ -49,15 +35,9 @@ contract DeployGangVesting is Script {
         vesting.setEcosystemAddress(ecosystemAddress);
         console.log("Ecosystem address set to:", ecosystemAddress);
 
-        // Mint tokens to the deployer
-        uint256 totalSupply = 1_000_000_000 * 10 ** 18; // 1B tokens
-        mockERC20.mint(deployer, totalSupply);
-        console.log("Minted", totalSupply / 10 ** 18, "tokens to deployer");
-
         // Transfer tokens to the vesting contract
-        uint256 vestingAmount = 10_000_000 * 10 ** 18; // 10M tokens for vesting
-        mockERC20.approve(address(vesting), vestingAmount);
-        mockERC20.transfer(address(vesting), vestingAmount);
+        uint256 vestingAmount = gang.MAX_SUPPLY();
+        gang.transfer(address(vesting), vestingAmount);
         console.log("Transferred", vestingAmount / 10 ** 18, "tokens to vesting contract");
 
         // Optional: Lock the merkle root to prevent further changes
