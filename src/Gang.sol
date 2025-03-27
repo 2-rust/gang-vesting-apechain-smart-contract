@@ -7,8 +7,7 @@ import "@solady/src/tokens/ERC20.sol";
 /// @notice ERC20 Token
 /// @author Rookmate (@0xRookmate)
 contract Gang is ERC20 {
-    // TODO: CHECK FINAL DECISION WITH THE TEAM
-    string private _name = "Gang Token";
+    string private _name = "Gutter Token";
     string private _symbol = "GANG";
     uint8 private immutable _decimals = 18;
     uint256 public immutable MAX_SUPPLY = 1_000_000_000 * (10 ** 18);
