@@ -105,6 +105,9 @@ contract GangVesting is Ownable {
         uint32 start,
         uint32 end
     ) external {
+        if (totalClaim == 0) revert InvalidAmount();
+        if (start >= end) revert InvalidAmount();
+
         // Generate leaf from vesting data
         bytes32 leaf = keccak256(abi.encodePacked(uint8(collection), recipient, totalClaim, start, end));
 

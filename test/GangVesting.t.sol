@@ -138,6 +138,10 @@ contract GangVestingTest is Test {
         vm.warp(start + 1 days);
 
         vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSignature("InvalidAmount()"));
+        vestContract.claim(proof, collection, user1, 0, start, end);
+        vm.expectRevert(abi.encodeWithSignature("InvalidAmount()"));
+        vestContract.claim(proof, collection, user1, amount, end + 1, end);
         vestContract.claim(proof, collection, user1, amount, start, end);
 
         (GangVesting.Vesting memory vesting,) = vestContract.getVesting(collection, user1, amount, start, end);
