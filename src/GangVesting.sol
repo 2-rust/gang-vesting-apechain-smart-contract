@@ -129,7 +129,7 @@ contract GangVesting is Ownable {
         }
 
         // Calculate vested amount
-        (, uint256 amount) = calculateVesting(leaf, true);
+        (, uint256 amount) = _calculateVesting(leaf, true);
         if (amount == 0) revert AlreadyClaimed();
 
         // Update vesting state
@@ -178,7 +178,7 @@ contract GangVesting is Ownable {
     /// @param leaf The vesting identifier
     /// @return vesting The vesting struct
     /// @return amount The amount vested
-    function calculateVesting(bytes32 leaf, bool isClaim)
+    function _calculateVesting(bytes32 leaf, bool isClaim)
         internal
         view
         returns (Vesting storage vesting, uint256 amount)
@@ -236,7 +236,7 @@ contract GangVesting is Ownable {
         returns (Vesting memory, uint256 amount)
     {
         bytes32 leaf = keccak256(abi.encodePacked(uint8(collection), recipient, totalClaim, start, end));
-        return calculateVesting(leaf, false);
+        return _calculateVesting(leaf, false);
     }
 
     /// @notice Get vesting details for multiple vestings at once
@@ -267,7 +267,7 @@ contract GangVesting is Ownable {
         for (uint256 i = 0; i < length; i++) {
             bytes32 leaf =
                 keccak256(abi.encodePacked(uint8(collections[i]), recipients[i], totalClaims[i], starts[i], ends[i]));
-            (Vesting storage info, uint256 amount) = calculateVesting(leaf, false);
+            (Vesting storage info, uint256 amount) = _calculateVesting(leaf, false);
 
             // Copy storage struct to memory
             vestingInfo[i] = Vesting({
