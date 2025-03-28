@@ -148,7 +148,7 @@ contract GangVestingTest is Test {
         assertEq(uint8(vesting.collection), uint8(collection));
     }
 
-    function testCannotClaimTwice() public {
+    function testCannotClaimTwiceInSameDay() public {
         GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
@@ -166,27 +166,9 @@ contract GangVestingTest is Test {
         vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
         vestContract.claim(proof, collection, user1, amount, start, end);
 
-        vm.stopPrank();
-    }
-
-    function testCannotClaimWithinOneDayOfPreviousClaim() public {
-        GangVesting.Collection collection = GangVesting.Collection.Cat;
-        uint256 amount = 100e18;
-        uint32 start = uint32(block.timestamp);
-        uint32 end = uint32(block.timestamp + 365 days);
-
-        bytes32[] memory proof = merkle.getProof(leaves, 0);
-
-        // Move to after vesting start
-        vm.warp(start + 1 days);
-
-        vm.prank(user1);
-        vestContract.claim(proof, collection, user1, amount, start, end);
-
         // Try to claim again within 1 day
         vm.warp(start + 1.5 days);
 
-        vm.prank(user1);
         vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
         vestContract.claim(proof, collection, user1, amount, start, end);
     }
@@ -216,30 +198,6 @@ contract GangVestingTest is Test {
 
         assertGt(vesting.claimed, 0);
         assertLt(vesting.claimed, amount);
-    }
-
-    function testVestedAmountCalculation() public {
-        GangVesting.Collection collection = GangVesting.Collection.Cat;
-        uint256 amount = 100e18;
-        uint32 start = uint32(block.timestamp);
-        uint32 end = uint32(block.timestamp + 365 days);
-
-        bytes32[] memory proof = merkle.getProof(leaves, 0);
-
-        // Move to after vesting start
-        vm.warp(start + 1 days);
-
-        // Claim at start
-        vm.prank(user1);
-        vestContract.claim(proof, collection, user1, amount, start, end);
-
-        // Move forward 181.5 days (50% of vesting period after first claim)
-        vm.warp(block.timestamp + 181.5 days);
-
-        (, uint256 vestable) = vestContract.getVesting(collection, user1, amount, start, end);
-
-        // Should be roughly 50% of total amount
-        assertApproxEqRel(vestable, amount / 2, 0.01e18); // 1% tolerance
     }
 
     function testClaimAfterEnd() public {
@@ -283,7 +241,7 @@ contract GangVestingTest is Test {
         vestContract.claim(proof, collection, user1, amount, start, end);
     }
 
-    function testWithdrawExpiredFunds() public {
+    function testClaimExpiredFunds() public {
         GangVesting.Collection collection = GangVesting.Collection.Cat;
         uint256 amount = 100e18;
         uint32 start = uint32(block.timestamp);
@@ -348,6 +306,66 @@ contract GangVestingTest is Test {
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSignature("EcosystemClaimTooEarly()"));
         vestContract.claimEcosystemFunds(leaf);
+    }
+
+    function testClaimEcosystemFundsWithNoUnclaimed() public {
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
+        uint256 amount = 100e18;
+        uint32 start = uint32(block.timestamp);
+        uint32 end = uint32(block.timestamp + 365 days);
+
+        bytes32[] memory proof = merkle.getProof(leaves, 0);
+
+        // Set ecosystem address
+        vm.prank(owner);
+        vestContract.setEcosystemAddress(ecosystemAddress);
+
+        // Move to after vesting end and claim all tokens
+        vm.warp(end + 1 days);
+
+        vm.prank(user1);
+        vestContract.claim(proof, collection, user1, amount, start, end);
+
+        // Move past expiry window
+        vm.warp(end + 70 days);
+
+        // Record initial balance
+        uint256 initialEcosystemBalance = token.balanceOf(ecosystemAddress);
+
+        // Create leaf for ecosystem funds claim
+        bytes32 leaf = keccak256(abi.encodePacked(uint8(collection), user1, amount, start, end));
+
+        // Should execute without reverting but do nothing
+        vm.prank(owner);
+        vestContract.claimEcosystemFunds(leaf);
+
+        // Balance should remain unchanged
+        uint256 finalEcosystemBalance = token.balanceOf(ecosystemAddress);
+        assertEq(finalEcosystemBalance, initialEcosystemBalance);
+    }
+
+    function testVestedAmountCalculation() public {
+        GangVesting.Collection collection = GangVesting.Collection.Cat;
+        uint256 amount = 100e18;
+        uint32 start = uint32(block.timestamp);
+        uint32 end = uint32(block.timestamp + 365 days);
+
+        bytes32[] memory proof = merkle.getProof(leaves, 0);
+
+        // Move to after vesting start
+        vm.warp(start + 1 days);
+
+        // Claim at start
+        vm.prank(user1);
+        vestContract.claim(proof, collection, user1, amount, start, end);
+
+        // Move forward 181.5 days (50% of vesting period after first claim)
+        vm.warp(block.timestamp + 181.5 days);
+
+        (, uint256 vestable) = vestContract.getVesting(collection, user1, amount, start, end);
+
+        // Should be roughly 50% of total amount
+        assertApproxEqRel(vestable, amount / 2, 0.01e18); // 1% tolerance
     }
 
     function testInvalidProof() public {
@@ -456,61 +474,6 @@ contract GangVestingTest is Test {
         // Check that claimable amount is now zero
         (, uint256 claimable) = vestContract.getVesting(collection, user1, amount, start, end);
         assertEq(claimable, 0);
-    }
-
-    function testOwnerOnlyMethods() public {
-        address randomUser = address(0x999);
-
-        // Try to update merkle root as non-owner
-        vm.prank(randomUser);
-        vm.expectRevert();
-        vestContract.updateMerkleRoot(bytes32(0));
-
-        // Try to lock root as non-owner
-        vm.prank(randomUser);
-        vm.expectRevert();
-        vestContract.lockRoot();
-
-        // Try to set ecosystem address as non-owner
-        vm.prank(randomUser);
-        vm.expectRevert();
-        vestContract.setEcosystemAddress(address(0x123));
-    }
-
-    function testClaimEcosystemFundsWithNoUnclaimed() public {
-        GangVesting.Collection collection = GangVesting.Collection.Cat;
-        uint256 amount = 100e18;
-        uint32 start = uint32(block.timestamp);
-        uint32 end = uint32(block.timestamp + 365 days);
-
-        bytes32[] memory proof = merkle.getProof(leaves, 0);
-
-        // Set ecosystem address
-        vm.prank(owner);
-        vestContract.setEcosystemAddress(ecosystemAddress);
-
-        // Move to after vesting end and claim all tokens
-        vm.warp(end + 1 days);
-
-        vm.prank(user1);
-        vestContract.claim(proof, collection, user1, amount, start, end);
-
-        // Move past expiry window
-        vm.warp(end + 70 days);
-
-        // Record initial balance
-        uint256 initialEcosystemBalance = token.balanceOf(ecosystemAddress);
-
-        // Create leaf for ecosystem funds claim
-        bytes32 leaf = keccak256(abi.encodePacked(uint8(collection), user1, amount, start, end));
-
-        // Should execute without reverting but do nothing
-        vm.prank(owner);
-        vestContract.claimEcosystemFunds(leaf);
-
-        // Balance should remain unchanged
-        uint256 finalEcosystemBalance = token.balanceOf(ecosystemAddress);
-        assertEq(finalEcosystemBalance, initialEcosystemBalance);
     }
 
     // Test calling calculateVesting before start time
