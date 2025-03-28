@@ -213,9 +213,10 @@ contract GangVesting is Ownable {
         // Calculate time-based vesting
         unchecked {
             // These operations cannot overflow due to the previous timestamp checks
-            uint256 timeSinceLastClaim = current - vesting.lastClaim;
+            uint256 timeSinceStart = current - start;
             uint256 vestingPeriod = end - start;
-            amount = (total * timeSinceLastClaim) / vestingPeriod;
+            uint256 vestedSoFar = (total * timeSinceStart) / vestingPeriod;
+            amount = vestedSoFar - claimed;
         }
     }
 
