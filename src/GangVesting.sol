@@ -11,7 +11,7 @@ import "@solady/src/utils/MerkleProofLib.sol";
 contract GangVesting is Ownable {
     address public immutable vestingToken;
     address public ecosystemAddress;
-    uint32 public immutable expiryWindow = 69 days;
+    uint32 public constant expiryWindow = 69 days;
     bytes32 public merkleRoot;
     bool public rootLocked;
     uint256 public totalClaimed;
