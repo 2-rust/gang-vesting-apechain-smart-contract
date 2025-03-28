@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import "@solady/src/tokens/ERC20.sol";
 
-/// @title Gang Token
+/// @title Gutter Token
 /// @notice ERC20 Token
 /// @author Rookmate (@0xRookmate)
 contract Gang is ERC20 {
