@@ -29,6 +29,7 @@ contract GangVesting is Ownable {
         geezOnApe,
         chimpers,
         chimpersGen,
+        reGenerates,
         Grab,
         Team,
         SeedRound,
