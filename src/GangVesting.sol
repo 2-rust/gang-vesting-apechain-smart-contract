@@ -128,7 +128,7 @@ contract GangVesting is Ownable {
             vesting.recipient = recipient;
             vesting.start = start;
             vesting.end = end;
-            vesting.lastClaim = start;
+            vesting.lastClaim = start; // Should be removed to allow same day claims at start
         }
 
         // Calculate vested amount
