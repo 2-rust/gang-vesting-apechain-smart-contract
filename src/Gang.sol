@@ -5,7 +5,6 @@ import "@solady/src/tokens/ERC20.sol";
 
 /// @title Gutter Token
 /// @notice ERC20 Token
-/// @author Rookmate (@0xRookmate)
 contract Gang is ERC20 {
     string private _name = "Gutter Token";
     string private _symbol = "GANG";

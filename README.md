@@ -1,4 +1,4 @@
-## Working with GangVesting
+## ApeChain GangVesting Smart Contract
 
 GangVesting is a simpler version with a single merkle root for all vesting schedules.
 
