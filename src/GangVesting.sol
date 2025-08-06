@@ -5,9 +5,8 @@ import "@solady/src/auth/Ownable.sol";
 import "@solady/src/utils/SafeTransferLib.sol";
 import "@solady/src/utils/MerkleProofLib.sol";
 
-/// @title GangVesting
-/// @notice Token vesting with a single merkle root
-/// @author Rookmate
+// @title GangVesting
+// @notice Token vesting with a single merkle root
 contract GangVesting is Ownable {
     address public immutable vestingToken;
     address public ecosystemAddress;
@@ -70,36 +69,36 @@ contract GangVesting is Ownable {
         vestingToken = _vestingToken;
     }
 
-    /// @notice Update the merkle root (only if not locked)
-    /// @param newRoot The new merkle root
+    // @notice Update the merkle root (only if not locked)
+    // @param newRoot The new merkle root
     function updateMerkleRoot(bytes32 newRoot) external onlyOwner {
         if (rootLocked) revert RootIsLocked();
         merkleRoot = newRoot;
         emit MerkleRootUpdated(newRoot);
     }
 
-    /// @notice Lock the merkle root permanently
+    // @notice Lock the merkle root permanently
     function lockRoot() external onlyOwner {
         if (rootLocked) revert RootIsLocked();
         rootLocked = true;
         emit RootLocked();
     }
 
-    /// @notice Set the ecosystem address (only owner)
-    /// @param _ecosystemAddress The address of the ecosystem
+    // @notice Set the ecosystem address (only owner)
+    // @param _ecosystemAddress The address of the ecosystem
     function setEcosystemAddress(address _ecosystemAddress) external onlyOwner {
         if (rootLocked) revert RootIsLocked();
         if (_ecosystemAddress == address(0)) revert InvalidAddress();
         ecosystemAddress = _ecosystemAddress;
     }
 
-    /// @notice Claim vested tokens with merkle proof
-    /// @param proof Merkle proof to validate the claim
-    /// @param collection The collection associated with the vesting
-    /// @param recipient The recipient of the vesting
-    /// @param totalClaim The total amount being vested
-    /// @param start The start time of the vesting
-    /// @param end The end time of the vesting
+    // @notice Claim vested tokens with merkle proof
+    // @param proof Merkle proof to validate the claim
+    // @param collection The collection associated with the vesting
+    // @param recipient The recipient of the vesting
+    // @param totalClaim The total amount being vested
+    // @param start The start time of the vesting
+    // @param end The end time of the vesting
     function claim(
         bytes32[] calldata proof,
         Collection collection,
@@ -148,8 +147,8 @@ contract GangVesting is Ownable {
         emit VestingClaimed(leaf, recipient, amount);
     }
 
-    /// @notice Claim unclaimed funds for ecosystem after 69 days from vesting end
-    /// @param leaf The vesting identifier
+    // @notice Claim unclaimed funds for ecosystem after 69 days from vesting end
+    // @param leaf The vesting identifier
     function claimEcosystemFunds(bytes32 leaf) external {
         Vesting storage vesting = vestings[leaf];
 
@@ -177,10 +176,10 @@ contract GangVesting is Ownable {
         emit VestingClaimed(leaf, ecosystemAddress, unclaimedAmount);
     }
 
-    /// @notice Internal function to get the vested amount
-    /// @param leaf The vesting identifier
-    /// @return vesting The vesting struct
-    /// @return amount The amount vested
+    // @notice Internal function to get the vested amount
+    // @param leaf The vesting identifier
+    // @return vesting The vesting struct
+    // @return amount The amount vested
     function _calculateVesting(bytes32 leaf, bool isClaim)
         internal
         view
@@ -226,13 +225,13 @@ contract GangVesting is Ownable {
         }
     }
 
-    /// @notice Get the vesting details for a single vesting
-    /// @param collection The collection associated with the vesting
-    /// @param recipient The recipient of the vesting
-    /// @param totalClaim The total totalClaim being vested
-    /// @param start The start time of the vesting
-    /// @param end The end time of the vesting
-    /// @return The vesting struct and current claimable amount
+    // @notice Get the vesting details for a single vesting
+    // @param collection The collection associated with the vesting
+    // @param recipient The recipient of the vesting
+    // @param totalClaim The total totalClaim being vested
+    // @param start The start time of the vesting
+    // @param end The end time of the vesting
+    // @return The vesting struct and current claimable amount
     function getVesting(Collection collection, address recipient, uint256 totalClaim, uint32 start, uint32 end)
         external
         view
@@ -242,14 +241,14 @@ contract GangVesting is Ownable {
         return _calculateVesting(leaf, false);
     }
 
-    /// @notice Get vesting details for multiple vestings at once
-    /// @param collections Array of collections
-    /// @param recipients Array of recipients
-    /// @param totalClaims Array of total claims
-    /// @param starts Array of start times
-    /// @param ends Array of end times
-    /// @return vestingInfo Array of vesting structs
-    /// @return amounts Array of claimable amounts
+    // @notice Get vesting details for multiple vestings at once
+    // @param collections Array of collections
+    // @param recipients Array of recipients
+    // @param totalClaims Array of total claims
+    // @param starts Array of start times
+    // @param ends Array of end times
+    // @return vestingInfo Array of vesting structs
+    // @return amounts Array of claimable amounts
     function getVestingBatch(
         Collection[] calldata collections,
         address[] calldata recipients,

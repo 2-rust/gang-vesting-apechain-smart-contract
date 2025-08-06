@@ -5,14 +5,12 @@ import "@solady/src/auth/Ownable.sol";
 import "@solady/src/utils/SafeTransferLib.sol";
 import "@solady/src/utils/MerkleProofLib.sol";
 
-// TODO: MODIFY ONCE WE ADD SHADOWS
 interface IERC721 {
     function ownerOf(uint256 tokenId) external view returns (address);
 }
 
-/// @title MultiRootVesting
-/// @notice Token vesting with multiple merkle roots for different collections
-/// @author Rookmate (@0xRookmate)
+// @title MultiRootVesting
+// @notice Token vesting with multiple merkle roots for different collections
 contract MultiRootVesting is Ownable {
     address public immutable vestingToken;
     address public ecosystemAddress;
@@ -99,37 +97,37 @@ contract MultiRootVesting is Ownable {
         }
     }
 
-    /// @notice Update the merkle root for a specific collection (only if not locked)
-    /// @param collection The collection to update
-    /// @param newRoot The new merkle root
+    // @notice Update the merkle root for a specific collection (only if not locked)
+    // @param collection The collection to update
+    // @param newRoot The new merkle root
     function updateMerkleRoot(Collection collection, bytes32 newRoot) external onlyOwner {
         if (rootsLocked) revert RootLocked();
         collectionRoots[collection] = newRoot;
         emit MerkleRootUpdated(collection, newRoot);
     }
 
-    /// @notice Lock all merkle roots permanently
+    // @notice Lock all merkle roots permanently
     function lockRoots() external onlyOwner {
         rootsLocked = true;
         emit RootsLocked();
     }
 
-    /// @notice Set the ecosystem address (only owner)
-    /// @param _ecosystemAddress The address of the ecosystem
+    // @notice Set the ecosystem address (only owner)
+    // @param _ecosystemAddress The address of the ecosystem
     function setEcosystemAddress(address _ecosystemAddress) external onlyOwner {
         if (rootsLocked) revert RootLocked();
         if (_ecosystemAddress == address(0)) revert InvalidAddress();
         ecosystemAddress = _ecosystemAddress;
     }
 
-    /// @notice Claim vested tokens with merkle proof
-    /// @param proof Merkle proof to validate the claim
-    /// @param collection The collection type
-    /// @param tokenId The tokenId being vested
-    /// @param recipient The recipient of the vesting
-    /// @param totalClaim The total amount being vested
-    /// @param start The start time of the vesting
-    /// @param end The end time of the vesting
+    // @notice Claim vested tokens with merkle proof
+    // @param proof Merkle proof to validate the claim
+    // @param collection The collection type
+    // @param tokenId The tokenId being vested
+    // @param recipient The recipient of the vesting
+    // @param totalClaim The total amount being vested
+    // @param start The start time of the vesting
+    // @param end The end time of the vesting
     function claim(
         bytes32[] calldata proof,
         Collection collection,
@@ -187,8 +185,8 @@ contract MultiRootVesting is Ownable {
         emit VestingClaimed(leaf, collection, recipient, amount);
     }
 
-    /// @notice Claim unclaimed funds for ecosystem after 69 days from vesting end
-    /// @param leaf The vesting identifier
+    // @notice Claim unclaimed funds for ecosystem after 69 days from vesting end
+    // @param leaf The vesting identifier
     function claimEcosystemFunds(bytes32 leaf) external {
         Vesting storage vesting = vestings[leaf];
 
@@ -216,10 +214,10 @@ contract MultiRootVesting is Ownable {
         emit VestingClaimed(leaf, vesting.collection, ecosystemAddress, unclaimedAmount);
     }
 
-    /// @notice Internal function to get the vested amount
-    /// @param leaf The vesting identifier
-    /// @return vesting The vesting struct
-    /// @return amount The amount vested
+    // @notice Internal function to get the vested amount
+    // @param leaf The vesting identifier
+    // @return vesting The vesting struct
+    // @return amount The amount vested
     function calculateVesting(bytes32 leaf) internal view returns (Vesting storage vesting, uint256 amount) {
         vesting = vestings[leaf];
 
@@ -255,14 +253,14 @@ contract MultiRootVesting is Ownable {
         }
     }
 
-    /// @notice Get the vesting details
-    /// @param collection The collection type
-    /// @param tokenId The tokenId being vested
-    /// @param recipient The recipient of the vesting
-    /// @param totalClaim The total totalClaim being vested
-    /// @param start The start time of the vesting
-    /// @param end The end time of the vesting
-    /// @return The vesting struct
+    // @notice Get the vesting details
+    // @param collection The collection type
+    // @param tokenId The tokenId being vested
+    // @param recipient The recipient of the vesting
+    // @param totalClaim The total totalClaim being vested
+    // @param start The start time of the vesting
+    // @param end The end time of the vesting
+    // @return The vesting struct
     function getVesting(
         Collection collection,
         uint256 tokenId,

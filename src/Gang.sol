@@ -3,8 +3,8 @@ pragma solidity ^0.8.21;
 
 import "@solady/src/tokens/ERC20.sol";
 
-/// @title Gutter Token
-/// @notice ERC20 Token
+// @title Gutter Token
+// @notice ERC20 Token
 contract Gang is ERC20 {
     string private _name = "Gutter Token";
     string private _symbol = "GANG";
